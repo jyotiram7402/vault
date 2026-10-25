@@ -3,7 +3,7 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Lock, Command as CommandIcon, X } from 'lucide-react'
+import { Lock, X } from 'lucide-react'
 import { APP_NAME } from '@/lib/config'
 import { cn } from '@/lib/utils'
 import { postSessionMessage } from '@/lib/vault/broadcast'
@@ -110,7 +110,7 @@ export function AppShell({ onSignOut, notice, children }: AppShellProps) {
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">
       <Suspense fallback={<div className="hidden w-[72px] shrink-0 md:block lg:w-[232px]" />}>
-        <NavRail onLock={handleLock} />
+        <NavRail onLock={handleLock} onOpenPalette={() => setPaletteOpen(true)} />
       </Suspense>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -156,16 +156,6 @@ export function AppShell({ onSignOut, notice, children }: AppShellProps) {
         <InstallPrompt />
         <BottomNav />
       </div>
-
-      {/* Desktop hint, only where there is room for it */}
-      <button
-        type="button"
-        onClick={() => setPaletteOpen(true)}
-        className="fixed right-4 bottom-4 z-20 hidden items-center gap-2 rounded-btn border border-line bg-surface px-3 py-2 text-sm text-ink-muted shadow-overlay transition-colors hover:text-ink lg:inline-flex"
-      >
-        <CommandIcon aria-hidden="true" className="size-4" />
-        Search and actions
-      </button>
 
       {paletteOpen ? (
         <Suspense fallback={null}>

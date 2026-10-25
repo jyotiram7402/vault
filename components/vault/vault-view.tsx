@@ -62,12 +62,45 @@ function isItemType(value: string | null): value is ItemType {
   return value === 'login' || value === 'card' || value === 'note'
 }
 
+/**
+ * Which layout is on screen, decided in JavaScript rather than with a CSS
+ * `lg:hidden` wrapper.
+ *
+ * This matters more than it looks. The small-screen layout puts the form in a
+ * native <dialog> opened with showModal(), and a modal dialog makes the rest
+ * of the document INERT — every click outside it is swallowed. Hiding that
+ * dialog with CSS does not undo the inertness, so rendering both layouts at
+ * once froze the whole desktop page. Only one layout may exist at a time.
+ *
+ * It also avoids mounting the form twice, which duplicated every input id.
+ */
+function useIsDesktop(): boolean {
+  // Read on the very first render so there is no wrong frame. Safe: VaultView
+  // only ever mounts client-side, because the gate renders its "checking"
+  // panel during SSR and swaps to this afterwards — so there is nothing to
+  // hydrate against and `window` is always present here.
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1024px)').matches,
+  )
+
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 1024px)')
+    const apply = () => setIsDesktop(query.matches)
+    apply()
+    query.addEventListener('change', apply)
+    return () => query.removeEventListener('change', apply)
+  }, [])
+
+  return isDesktop
+}
+
 export function VaultView() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const { items, userId, lastSyncedAt } = useVault()
+  const isDesktop = useIsDesktop()
 
   const [rawQuery, setRawQuery] = useState('')
   const [query, setQuery] = useState('')
@@ -361,25 +394,30 @@ export function VaultView() {
         </div>
       </section>
 
-      {/* Detail pane: desktop only; phones and tablets use a sheet. */}
-      <section aria-label="Item details" className="hidden min-w-0 flex-1 lg:block">
-        {formOpen ? (
-          formNode
-        ) : selected ? (
-          detailNode
-        ) : (
-          <EmptyState
-            title="Nothing selected"
-            description="Choose an item on the left, or add a new one."
-            actions={
-              <Button variant="primary" onClick={() => setParams({ new: 'login' })}>
-                <Plus aria-hidden="true" className="size-4" />
-                Add login
-              </Button>
-            }
-          />
-        )}
-      </section>
+      {/* Detail pane: desktop only. Phones and tablets get the sheet below,
+          and the two are mutually exclusive — see useIsDesktop. The CSS guard
+          stays as well, so a resize never shows this pane beside the list
+          before the media-query listener catches up. */}
+      {isDesktop ? (
+        <section aria-label="Item details" className="hidden min-w-0 flex-1 lg:block">
+          {formOpen ? (
+            formNode
+          ) : selected ? (
+            detailNode
+          ) : (
+            <EmptyState
+              title="Nothing selected"
+              description="Choose an item on the left, or add a new one."
+              actions={
+                <Button variant="primary" onClick={() => setParams({ new: 'login' })}>
+                  <Plus aria-hidden="true" className="size-4" />
+                  Add login
+                </Button>
+              }
+            />
+          )}
+        </section>
+      ) : null}
 
       {/* Floating add button on phones and tablets */}
       <button
@@ -391,25 +429,28 @@ export function VaultView() {
         <Plus aria-hidden="true" className="size-6" />
       </button>
 
-      {/* Sheets for smaller screens */}
-      <div className="lg:hidden">
-        <Sheet
-          open={formOpen}
-          onClose={requestCloseForm}
-          guardClose
-          title={creating ? 'New item' : 'Edit item'}
-        >
-          {formNode}
-        </Sheet>
+      {/* Sheets for smaller screens. Never mounted on desktop: an open
+          <dialog> would make the page inert even while hidden. */}
+      {!isDesktop ? (
+        <>
+          <Sheet
+            open={formOpen}
+            onClose={requestCloseForm}
+            guardClose
+            title={creating ? 'New item' : 'Edit item'}
+          >
+            {formNode}
+          </Sheet>
 
-        <Sheet
-          open={!formOpen && selected !== null}
-          onClose={() => setParams({ item: null }, false)}
-          title={selected?.data.title ?? 'Item'}
-        >
-          {detailNode}
-        </Sheet>
-      </div>
+          <Sheet
+            open={!formOpen && selected !== null}
+            onClose={() => setParams({ item: null }, false)}
+            title={selected?.data.title ?? 'Item'}
+          >
+            {detailNode}
+          </Sheet>
+        </>
+      ) : null}
 
       <Dialog
         open={deleteTarget !== null}

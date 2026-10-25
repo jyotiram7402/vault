@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useCallback, useContext, useMemo, useRef, useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { CircleAlert, CircleCheck, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -43,6 +44,10 @@ const TONE_CLASSES: Record<ToastTone, string> = {
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  // Only the vault pages render a bottom tab bar; public and auth pages do not.
+  const pathname = usePathname()
+  const hasBottomNav = pathname === '/vault' || pathname.startsWith('/vault/')
+
   const [toasts, setToasts] = useState<ActiveToast[]>([])
   const nextId = useRef(1)
   const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>())
@@ -75,10 +80,17 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
+      {/* Lifted clear of the mobile tab bar, but only on the pages that have
+          one — an 8-second Undo toast would otherwise cover it. The wrapper is
+          pointer-events-none, so only a toast's own box ever blocks a click,
+          never this full-width strip. */}
       <div
         aria-live="polite"
         aria-atomic="false"
-        className="safe-bottom pointer-events-none fixed inset-x-0 bottom-0 z-[100] flex flex-col items-center gap-2 p-4 sm:items-end"
+        className={cn(
+          'safe-bottom pointer-events-none fixed inset-x-0 z-[100] flex flex-col items-center gap-2 p-4 sm:items-end',
+          hasBottomNav ? 'bottom-14 md:bottom-0' : 'bottom-0',
+        )}
       >
         {toasts.map((item) => (
           <div

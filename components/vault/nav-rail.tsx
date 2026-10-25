@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
 import {
+  Command,
   CreditCard,
   Dices,
   Gauge,
@@ -47,7 +48,13 @@ const PAGES = [
 const itemClasses =
   'flex h-11 items-center gap-3 rounded-btn px-3 text-sm font-medium transition-colors'
 
-export function NavRail({ onLock }: { onLock: () => void }) {
+export function NavRail({
+  onLock,
+  onOpenPalette,
+}: {
+  onLock: () => void
+  onOpenPalette: () => void
+}) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const { items } = useVault()
@@ -174,6 +181,23 @@ export function NavRail({ onLock }: { onLock: () => void }) {
             </li>
           )
         })}
+        {/* Lives in the rail, not floating over the page: a fixed button in
+            the corner covered the item form's Save button. */}
+        <li>
+          <button
+            type="button"
+            onClick={onOpenPalette}
+            title="Search and actions"
+            className={cn(
+              itemClasses,
+              'w-full justify-center text-ink-muted hover:bg-surface-2 hover:text-ink lg:justify-start',
+            )}
+          >
+            <Command aria-hidden="true" className="size-5 shrink-0" />
+            <span className="hidden lg:inline">Search</span>
+            <span className="sr-only lg:hidden">Search and actions</span>
+          </button>
+        </li>
         <li>
           <button
             type="button"

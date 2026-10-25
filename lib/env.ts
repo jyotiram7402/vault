@@ -41,11 +41,33 @@ export function missingEnvNames(): string[] {
 }
 
 /**
- * Absolute site address. Falls back to the current origin in the browser, then
- * to a sensible placeholder on the server so metadata never crashes.
+ * Turn a configured address into a clean origin, or null if it isn't usable.
+ * Tolerates a value entered without a scheme (`my-app.vercel.app`), which is
+ * the mistake people actually make — especially in hosting dashboards that
+ * mask the field while you type.
+ */
+function toOrigin(value: string): string | null {
+  if (!value) return null
+  const candidate = /^https?:\/\//i.test(value) ? value : `https://${value}`
+  try {
+    return new URL(candidate).origin
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Absolute site address, GUARANTEED to parse.
+ *
+ * The root layout does `metadataBase: new URL(siteUrl())`. If this ever
+ * returned something malformed, that would throw at the top of the root
+ * layout and every page in the app would 500 — landing, sign-in and vault
+ * alike — over a single mistyped environment variable. A bad value degrades
+ * to the browser's own origin instead.
  */
 export function siteUrl(): string {
-  if (SITE_URL) return SITE_URL
+  const configured = toOrigin(SITE_URL)
+  if (configured) return configured
   if (typeof window !== 'undefined') return window.location.origin
   return 'http://localhost:3000'
 }

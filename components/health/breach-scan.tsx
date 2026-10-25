@@ -26,12 +26,17 @@ export function BreachScan({ items, onResults, scanned, foundCount }: BreachScan
   const [progress, setProgress] = useState({ done: 0, total: 0 })
   const [error, setError] = useState<string | null>(null)
   const controllerRef = useRef<AbortController | null>(null)
+  const hasScannedRef = useRef(false)
 
   useEffect(() => {
     return () => {
       controllerRef.current?.abort()
-      // Drop the cached ranges when this page goes away.
-      void import('@/lib/password/hibp').then((module) => module.clearBreachCache())
+      // Drop the cached ranges when this page goes away — but only if a scan
+      // actually ran. Otherwise this would download the hibp chunk on unmount
+      // purely to clear a cache that was never populated.
+      if (hasScannedRef.current) {
+        void import('@/lib/password/hibp').then((module) => module.clearBreachCache())
+      }
     }
   }, [])
 
@@ -41,6 +46,7 @@ export function BreachScan({ items, onResults, scanned, foundCount }: BreachScan
 
     const controller = new AbortController()
     controllerRef.current = controller
+    hasScannedRef.current = true
 
     setRunning(true)
     setError(null)
