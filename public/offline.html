@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>You're offline · Tijori</title>
+    <meta name="robots" content="noindex" />
+    <style>
+      :root {
+        --bg: #e8ece4;
+        --surface: #f5f7f2;
+        --ink: #17201c;
+        --ink-muted: #55625a;
+        --line: #c3ccc1;
+        --safe: #2e4a3f;
+        --brass: #a8771f;
+        color-scheme: light;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1513;
+          --surface: #161e1b;
+          --ink: #e5eae4;
+          --ink-muted: #97a49c;
+          --line: #2b3732;
+          --safe: #79a893;
+          --brass: #d6a54e;
+          color-scheme: dark;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        line-height: 1.55;
+      }
+      main {
+        max-width: 28rem;
+        width: 100%;
+        padding: 32px;
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        background: var(--surface);
+      }
+      .mark {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        border: 3px solid var(--brass);
+        background: var(--bg);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+      }
+      .keyhole {
+        width: 14px;
+        height: 22px;
+        border-radius: 7px 7px 3px 3px;
+        background: var(--safe);
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.5rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0;
+        color: var(--ink-muted);
+      }
+      p + p {
+        margin-top: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="mark" aria-hidden="true"><span class="keyhole"></span></div>
+      <h1>You're offline</h1>
+      <p>Your vault needs a connection. Reconnect and try again.</p>
+      <p>Nothing is stored on this device, so there is nothing here to read while you wait.</p>
+    </main>
+  </body>
+</html>

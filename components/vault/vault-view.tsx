@@ -1,0 +1,461 @@
+'use client'
+
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { Plus } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
+import { SessionExpiredError, deleteItemRow, fetchAllItemRows } from '@/lib/vault/api'
+import { createItem, mergeRows, restoreItem, saveItem } from '@/lib/vault/items'
+import {
+  ALL_FILTER,
+  filterItems,
+  searchItems,
+  sortItems,
+  type Filter,
+  type SortMode,
+} from '@/lib/vault/search'
+import {
+  getVaultKey,
+  markSynced,
+  removeItem,
+  replaceItems,
+  upsertItem,
+} from '@/lib/vault/store'
+import { useVault } from '@/lib/vault/use-vault'
+import { CATEGORY_IDS, type CategoryId, type ItemPayload, type ItemType, type VaultItem } from '@/lib/vault/types'
+import { Button } from '@/components/ui/button'
+import { Dialog } from '@/components/ui/dialog'
+import { Sheet } from '@/components/ui/sheet'
+import { useToast } from '@/components/ui/toast'
+import { EmptyState } from '@/components/ui/empty-state'
+import { FilterBar } from '@/components/vault/filter-bar'
+import { ItemList } from '@/components/vault/item-list'
+import { ItemDetail } from '@/components/vault/item-detail'
+import { ItemForm } from '@/components/vault/item-form'
+
+const ImportDialog = lazy(() =>
+  import('@/components/settings/import-dialog').then((module) => ({
+    default: module.ImportDialog,
+  })),
+)
+
+const SYNC_AFTER_MS = 30_000
+const SEARCH_DEBOUNCE_MS = 80
+
+function parseFilter(value: string | null): Filter {
+  if (!value || value === 'all') return ALL_FILTER
+  if (value === 'favorites') return { kind: 'favorites' }
+  const [kind, rest] = value.split(':', 2)
+  if (!rest) return ALL_FILTER
+  if (kind === 'type' && (rest === 'login' || rest === 'card' || rest === 'note')) {
+    return { kind: 'type', value: rest }
+  }
+  if (kind === 'category' && (CATEGORY_IDS as readonly string[]).includes(rest)) {
+    return { kind: 'category', value: rest as CategoryId }
+  }
+  if (kind === 'tag') return { kind: 'tag', value: rest }
+  return ALL_FILTER
+}
+
+function isItemType(value: string | null): value is ItemType {
+  return value === 'login' || value === 'card' || value === 'note'
+}
+
+export function VaultView() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const { toast } = useToast()
+  const { items, userId, lastSyncedAt } = useVault()
+
+  const [rawQuery, setRawQuery] = useState('')
+  const [query, setQuery] = useState('')
+  const [sort, setSort] = useState<SortMode>('updated')
+  const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [formDirty, setFormDirty] = useState(false)
+  const [discardOpen, setDiscardOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<VaultItem | null>(null)
+
+  const filterKeyParam = searchParams.get('filter')
+  const filter = useMemo(() => parseFilter(filterKeyParam), [filterKeyParam])
+  const selectedId = searchParams.get('item')
+  const newType = searchParams.get('new')
+  const editing = searchParams.get('edit') === '1'
+  const focusPassword = searchParams.get('focus') === 'password'
+  const importOpen = searchParams.get('import') === '1'
+
+  const selected = useMemo(
+    () => (selectedId ? (items.find((item) => item.id === selectedId) ?? null) : null),
+    [items, selectedId],
+  )
+  // `?new=choose` opens the type picker; `?new=login` goes straight to a form.
+  const creating = isItemType(newType) || newType === 'choose'
+  const formOpen = creating || (editing && selected !== null)
+
+  // 80 ms is enough to stop every keystroke re-ranking a large vault.
+  useEffect(() => {
+    const timer = setTimeout(() => setQuery(rawQuery), SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [rawQuery])
+
+  const visible = useMemo(
+    () => sortItems(searchItems(filterItems(items, filter), query), query.trim() ? 'updated' : sort),
+    [items, filter, query, sort],
+  )
+
+  const setParams = useCallback(
+    (updates: Record<string, string | null>, replace = false) => {
+      const params = new URLSearchParams(searchParams.toString())
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === null) params.delete(key)
+        else params.set(key, value)
+      }
+      const search = params.toString()
+      const url = search ? `${pathname}?${search}` : pathname
+      if (replace) router.replace(url)
+      else router.push(url)
+    },
+    [pathname, router, searchParams],
+  )
+
+  // ------------------------------------------------------------------ sync --
+
+  const sync = useCallback(async () => {
+    if (!userId) return
+    try {
+      const supabase = createClient()
+      const rows = await fetchAllItemRows(supabase, userId)
+      const merged = await mergeRows(getVaultKey(), userId, rows, items)
+      replaceItems(merged.items)
+    } catch (cause) {
+      if (cause instanceof SessionExpiredError) {
+        router.replace('/login?next=/vault')
+        return
+      }
+      // A failed background refresh is not worth interrupting anyone over.
+      markSynced()
+    }
+  }, [items, router, userId])
+
+  useEffect(() => {
+    const maybeSync = () => {
+      if (document.visibilityState !== 'visible') return
+      if (lastSyncedAt !== null && Date.now() - lastSyncedAt < SYNC_AFTER_MS) return
+      void sync()
+    }
+    window.addEventListener('focus', maybeSync)
+    document.addEventListener('visibilitychange', maybeSync)
+    return () => {
+      window.removeEventListener('focus', maybeSync)
+      document.removeEventListener('visibilitychange', maybeSync)
+    }
+  }, [lastSyncedAt, sync])
+
+  // ---------------------------------------------------------------- actions -
+
+  const requireOnline = useCallback((): boolean => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      toast({
+        message: 'You’re offline. Changes can’t be saved until you reconnect.',
+        tone: 'danger',
+      })
+      return false
+    }
+    return true
+  }, [toast])
+
+  const closeForm = useCallback(() => {
+    setFormDirty(false)
+    setFormError(null)
+    setDiscardOpen(false)
+    setParams({ new: null, edit: null, focus: null })
+  }, [setParams])
+
+  const requestCloseForm = useCallback(() => {
+    if (formDirty) setDiscardOpen(true)
+    else closeForm()
+  }, [closeForm, formDirty])
+
+  const handleSave = useCallback(
+    async (payload: ItemPayload) => {
+      if (!userId || !requireOnline()) return
+      setSaving(true)
+      setFormError(null)
+      try {
+        const supabase = createClient()
+        const key = getVaultKey()
+
+        if (creating) {
+          const created = await createItem(supabase, key, userId, payload)
+          upsertItem(created)
+          toast({
+            message:
+              payload.type === 'login'
+                ? 'Login saved'
+                : payload.type === 'card'
+                  ? 'Card saved'
+                  : 'Note saved',
+            tone: 'success',
+          })
+          setFormDirty(false)
+          setParams({ new: null, edit: null, focus: null, item: created.id }, true)
+        } else if (selected) {
+          const updated = await saveItem(
+            supabase,
+            key,
+            userId,
+            selected.id,
+            payload,
+            selected.createdAt,
+          )
+          upsertItem(updated)
+          toast({
+            message:
+              payload.type === 'login'
+                ? 'Login saved'
+                : payload.type === 'card'
+                  ? 'Card saved'
+                  : 'Note saved',
+            tone: 'success',
+          })
+          setFormDirty(false)
+          setParams({ edit: null, focus: null })
+        }
+      } catch (cause) {
+        if (cause instanceof SessionExpiredError) {
+          router.replace('/login?next=/vault')
+          return
+        }
+        setFormError(cause instanceof Error ? cause.message : 'Couldn’t save this item.')
+      } finally {
+        setSaving(false)
+      }
+    },
+    [creating, requireOnline, router, selected, setParams, toast, userId],
+  )
+
+  const handleToggleFavorite = useCallback(
+    async (item: VaultItem) => {
+      if (!userId || !requireOnline()) return
+      const next: ItemPayload = { ...item.data, favorite: !item.data.favorite }
+      // Optimistic: flip it now, put it back if the save fails.
+      upsertItem({ ...item, data: next })
+      try {
+        const supabase = createClient()
+        const saved = await saveItem(
+          supabase,
+          getVaultKey(),
+          userId,
+          item.id,
+          next,
+          item.createdAt,
+        )
+        upsertItem(saved)
+      } catch {
+        upsertItem(item)
+        toast({ message: 'Couldn’t update that item.', tone: 'danger' })
+      }
+    },
+    [requireOnline, toast, userId],
+  )
+
+  const handleDelete = useCallback(
+    async (item: VaultItem) => {
+      if (!userId || !requireOnline()) return
+      setDeleteTarget(null)
+      removeItem(item.id)
+      if (selectedId === item.id) setParams({ item: null, edit: null, focus: null }, true)
+
+      try {
+        const supabase = createClient()
+        await deleteItemRow(supabase, userId, item.id)
+        toast({
+          message: `“${item.data.title}” deleted`,
+          action: {
+            label: 'Undo',
+            onClick: () => {
+              void (async () => {
+                try {
+                  await restoreItem(createClient(), userId, item)
+                  upsertItem(item)
+                } catch {
+                  toast({ message: 'Couldn’t restore that item.', tone: 'danger' })
+                }
+              })()
+            },
+          },
+          duration: 8000,
+        })
+      } catch (cause) {
+        upsertItem(item)
+        toast({
+          message: cause instanceof Error ? cause.message : 'Couldn’t delete that item.',
+          tone: 'danger',
+        })
+      }
+    },
+    [requireOnline, selectedId, setParams, toast, userId],
+  )
+
+  // --------------------------------------------------------------- rendering
+
+  const formNode = formOpen ? (
+    <ItemForm
+      key={creating ? `new-${newType}` : `edit-${selected?.id}`}
+      item={creating ? null : selected}
+      defaultType={isItemType(newType) ? newType : 'choose'}
+      defaultTitle={creating && query.trim() ? query.trim() : ''}
+      focusPassword={focusPassword}
+      saving={saving}
+      error={formError}
+      onSave={(payload) => void handleSave(payload)}
+      onCancel={requestCloseForm}
+      onDirtyChange={setFormDirty}
+    />
+  ) : null
+
+  const detailNode = selected ? (
+    <ItemDetail
+      item={selected}
+      onEdit={() => setParams({ edit: '1' })}
+      onDelete={() => setDeleteTarget(selected)}
+      onToggleFavorite={() => void handleToggleFavorite(selected)}
+    />
+  ) : null
+
+  return (
+    <div className="flex min-h-full">
+      {/* List pane */}
+      <section
+        aria-label="Items"
+        className={cn(
+          'flex min-w-0 flex-1 flex-col border-line lg:w-[380px] lg:max-w-[380px] lg:flex-none lg:border-r',
+        )}
+      >
+        <FilterBar
+          query={rawQuery}
+          onQueryChange={setRawQuery}
+          activeFilter={filterKeyParam ?? 'all'}
+          sort={sort}
+          onSortChange={setSort}
+          items={items}
+        />
+        <div className="flex-1 overflow-y-auto">
+          <ItemList
+            items={visible}
+            totalCount={items.length}
+            query={query}
+            selectedId={selectedId}
+            onSelect={(item) => setParams({ item: item.id })}
+            onToggleFavorite={(item) => void handleToggleFavorite(item)}
+            onClearSearch={() => {
+              setRawQuery('')
+              setQuery('')
+            }}
+            onAdd={(type) => setParams({ new: type })}
+            onImport={() => setParams({ import: '1' })}
+            isFavoritesFilter={filter.kind === 'favorites'}
+          />
+        </div>
+      </section>
+
+      {/* Detail pane: desktop only; phones and tablets use a sheet. */}
+      <section aria-label="Item details" className="hidden min-w-0 flex-1 lg:block">
+        {formOpen ? (
+          formNode
+        ) : selected ? (
+          detailNode
+        ) : (
+          <EmptyState
+            title="Nothing selected"
+            description="Choose an item on the left, or add a new one."
+            actions={
+              <Button variant="primary" onClick={() => setParams({ new: 'login' })}>
+                <Plus aria-hidden="true" className="size-4" />
+                Add login
+              </Button>
+            }
+          />
+        )}
+      </section>
+
+      {/* Floating add button on phones and tablets */}
+      <button
+        type="button"
+        onClick={() => setParams({ new: 'choose' })}
+        aria-label="Add item"
+        className="fixed right-4 bottom-20 z-30 inline-flex size-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-overlay transition-[filter] hover:brightness-110 lg:hidden"
+      >
+        <Plus aria-hidden="true" className="size-6" />
+      </button>
+
+      {/* Sheets for smaller screens */}
+      <div className="lg:hidden">
+        <Sheet
+          open={formOpen}
+          onClose={requestCloseForm}
+          guardClose
+          title={creating ? 'New item' : 'Edit item'}
+        >
+          {formNode}
+        </Sheet>
+
+        <Sheet
+          open={!formOpen && selected !== null}
+          onClose={() => setParams({ item: null }, false)}
+          title={selected?.data.title ?? 'Item'}
+        >
+          {detailNode}
+        </Sheet>
+      </div>
+
+      <Dialog
+        open={deleteTarget !== null}
+        onClose={() => setDeleteTarget(null)}
+        title={`Delete “${deleteTarget?.data.title ?? ''}”?`}
+        description="You can undo this for a few seconds."
+        size="sm"
+        footer={
+          <>
+            <Button onClick={() => setDeleteTarget(null)}>Cancel</Button>
+            <Button
+              variant="danger"
+              onClick={() => deleteTarget && void handleDelete(deleteTarget)}
+            >
+              Delete
+            </Button>
+          </>
+        }
+      >
+        <p className="text-ink-muted">
+          This item will be removed from your vault on every device.
+        </p>
+      </Dialog>
+
+      <Dialog
+        open={discardOpen}
+        onClose={() => setDiscardOpen(false)}
+        title="Discard your changes?"
+        size="sm"
+        footer={
+          <>
+            <Button onClick={() => setDiscardOpen(false)}>Keep editing</Button>
+            <Button variant="danger" onClick={closeForm}>
+              Discard
+            </Button>
+          </>
+        }
+      >
+        <p className="text-ink-muted">Anything you have typed here will be lost.</p>
+      </Dialog>
+
+      {importOpen ? (
+        <Suspense fallback={null}>
+          <ImportDialog open onClose={() => setParams({ import: null }, true)} />
+        </Suspense>
+      ) : null}
+    </div>
+  )
+}

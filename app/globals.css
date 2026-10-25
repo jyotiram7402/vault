@@ -1,0 +1,518 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Tijori design tokens — a modern steel tijori.
+   Painted-steel greens, enamel off-white, brass hardware.
+   Every colour pair below meets WCAG AA. Keep it that way.
+   ========================================================================== */
+
+:root {
+  --bg: #e8ece4;
+  --surface: #f5f7f2;
+  --surface-2: #dce2d8;
+  --ink: #17201c;
+  --ink-muted: #55625a;
+  --line: #c3ccc1;
+  --safe: #2e4a3f;
+  --brass: #a8771f;
+  --danger: #b13a2b;
+  --ok: #2c7656;
+  --warn: #8a5e00;
+
+  /* Primary button: safe green in light mode, brass in dark mode. */
+  --primary: var(--safe);
+  --on-primary: #f5f7f2;
+  --on-danger: #f5f7f2;
+
+  --overlay-scrim: rgb(23 32 28 / 0.42);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: #0f1513;
+  --surface: #161e1b;
+  --surface-2: #1f2925;
+  --ink: #e5eae4;
+  --ink-muted: #97a49c;
+  --line: #2b3732;
+  --safe: #79a893;
+  --brass: #d6a54e;
+  --danger: #e7705b;
+  --ok: #62c49a;
+  --warn: #e0b04a;
+
+  --primary: var(--brass);
+  --on-primary: #0f1513;
+  --on-danger: #0f1513;
+
+  --overlay-scrim: rgb(0 0 0 / 0.62);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --bg: #0f1513;
+    --surface: #161e1b;
+    --surface-2: #1f2925;
+    --ink: #e5eae4;
+    --ink-muted: #97a49c;
+    --line: #2b3732;
+    --safe: #79a893;
+    --brass: #d6a54e;
+    --danger: #e7705b;
+    --ok: #62c49a;
+    --warn: #e0b04a;
+
+    --primary: var(--brass);
+    --on-primary: #0f1513;
+    --on-danger: #0f1513;
+
+    --overlay-scrim: rgb(0 0 0 / 0.62);
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-safe: var(--safe);
+  --color-brass: var(--brass);
+  --color-danger: var(--danger);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
+  --color-on-danger: var(--on-danger);
+
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono-secret), ui-monospace, monospace;
+
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.3125rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 1.875rem;
+  --text-4xl: 2.25rem;
+  --text-5xl: 3rem;
+  --text-6xl: 3.75rem;
+
+  --radius-field: 6px;
+  --radius-btn: 8px;
+  --radius-tile: 10px;
+  --radius-panel: 14px;
+
+  --shadow-overlay: 0 28px 64px -24px rgb(0 0 0 / 0.4), 0 10px 26px -14px rgb(0 0 0 / 0.28);
+}
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-stretch: 118%;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+/* Engraved maker's-plate headings. */
+.plate {
+  font-stretch: 125%;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+
+.plate-tight {
+  font-stretch: 112%;
+  font-weight: 600;
+  letter-spacing: -0.008em;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.prose-measure {
+  max-width: 64ch;
+}
+
+/* Secrets are the only monospace in the app. */
+.mono {
+  font-family: var(--font-mono-secret), ui-monospace, "SF Mono", monospace;
+  font-variant-numeric: tabular-nums;
+  font-variant-ligatures: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+::selection {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  color: inherit;
+}
+
+/* iOS zooms in on inputs under 16px. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 1rem;
+  }
+}
+
+input[type="search"]::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+/* Long lists render only what's near the viewport; no virtualisation library. */
+.list-cv {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 68px;
+}
+
+.hairline-y > * + * {
+  border-top: 1px solid var(--line);
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ==========================================================================
+   Privacy screen — blur everything marked secret when focus leaves.
+   ========================================================================== */
+
+html[data-privacy="on"][data-hidden="true"] .secret {
+  filter: blur(7px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.secret {
+  transition: filter 140ms ease-out;
+}
+
+/* ==========================================================================
+   Motion
+   ========================================================================== */
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes sheet-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes sheet-right {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* The dial: about 1¼ turns right, ¾ back, ½ right, looping. */
+@keyframes dial-working {
+  0% {
+    transform: rotate(0deg);
+  }
+  35% {
+    transform: rotate(450deg);
+  }
+  70% {
+    transform: rotate(180deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes dial-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-9px);
+  }
+  40% {
+    transform: translateX(7px);
+  }
+  60% {
+    transform: translateX(-5px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes bolt-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(11px);
+  }
+}
+
+.anim-fade {
+  animation: fade-in 180ms ease-out both;
+}
+
+.anim-rise {
+  animation: rise-in 260ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+.anim-pop {
+  animation: pop-in 160ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+/* Sheets rise from the bottom on phones and slide in from the right on
+   anything wider. Done here rather than with a `sm:` variant, because these
+   are plain CSS classes and Tailwind only generates variants for utilities. */
+.anim-sheet {
+  animation: sheet-up 240ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+}
+
+@media (min-width: 40rem) {
+  .anim-sheet {
+    animation-name: sheet-right;
+  }
+}
+
+.anim-spin {
+  animation: spin 900ms linear infinite;
+}
+
+/* The dial animates a wrapping <div>, so the compositor keeps it turning
+   while Argon2id blocks the main thread. */
+.dial-rotor {
+  will-change: transform;
+}
+
+.dial-rotor[data-state="working"] {
+  animation: dial-working 2400ms ease-in-out infinite;
+}
+
+.dial-rotor[data-state="success"] {
+  transform: rotate(0deg);
+  transition: transform 450ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.dial-shell[data-state="error"] {
+  animation: dial-shake 300ms ease-in-out 1;
+}
+
+.dial-bolt[data-state="success"] {
+  animation: bolt-out 450ms cubic-bezier(0.22, 0.61, 0.36, 1) both;
+  animation-delay: var(--bolt-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .dial-rotor[data-state="working"],
+  .dial-shell[data-state="error"],
+  .dial-bolt[data-state="success"] {
+    animation: none !important;
+  }
+}
+
+/* ==========================================================================
+   Native dialog
+   ========================================================================== */
+
+dialog {
+  padding: 0;
+  border: 0;
+  color: var(--ink);
+  background: transparent;
+  max-width: 100vw;
+  max-height: 100dvh;
+}
+
+dialog::backdrop {
+  background: var(--overlay-scrim);
+  backdrop-filter: blur(2px);
+}
+
+dialog:not([open]) {
+  display: none;
+}
+
+/* ==========================================================================
+   Range input (generator length slider)
+   ========================================================================== */
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 24px;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  margin-top: -10px;
+  border-radius: 999px;
+  background: var(--primary);
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--primary);
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+}
+
+/* ==========================================================================
+   Print — only the Emergency Kit should ever reach a printer.
+   ========================================================================== */
+
+.print-only {
+  display: none;
+}
+
+@media print {
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+
+  .no-print,
+  nav,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+    font-family: ui-monospace, monospace;
+    white-space: pre-wrap;
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000000;
+  }
+
+  .print-root {
+    display: block !important;
+    position: static !important;
+  }
+}
