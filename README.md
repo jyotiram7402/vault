@@ -1,6 +1,8 @@
-# Tijori
+# Vault
 
-Tijori is a free password manager that runs in any modern browser and installs like an app on phones and computers. Your logins are encrypted on your own device before anything is saved, so the server only ever holds scrambled data it cannot read.
+Vault is a free password manager that runs in any modern browser and installs like an app on phones and computers. Your logins are encrypted on your own device before anything is saved, so the server only ever holds scrambled data it cannot read.
+
+> **Renaming it:** change `APP_NAME` in [lib/config.ts](lib/config.ts) and everything the user sees follows, including download file names. Do **not** touch `CRYPTO_PROTOCOL` in [lib/crypto/constants.ts](lib/crypto/constants.ts) — changing it makes every existing vault impossible to open.
 
 The details of how that works are in [SECURITY.md](SECURITY.md).
 
@@ -56,15 +58,36 @@ All of these are in your Supabase project.
 - **Site URL**: your Vercel address, for example `https://tijori.vercel.app`. You will not know this until step E, so come back and fix it.
 - **Redirect URLs**: add `https://YOUR-APP.vercel.app/**`
 
-**Authentication → Emails → Templates**
+**Authentication → Emails → Templates** *(optional)*
 
-Paste the three templates from the bottom of this file.
+Supabase only lets you edit email templates once you are sending through your own SMTP server. Until then it shows "Set up custom SMTP to edit templates" and uses its generic defaults.
+
+**The app works either way.** Its sign-up and reset links go through `/auth/callback`, which handles the format Supabase's default templates produce. The custom templates at the bottom of this file are nicer wording — they say plainly that a password reset does *not* touch your master password — but they are not required.
+
+If you have set up SMTP (below), paste the three templates from the bottom of this file.
 
 **Authentication → Emails → SMTP**
 
-Supabase's built-in email sender is meant for testing and is heavily rate-limited — a handful of messages per hour. For real users, connect a free SMTP provider (Resend's free tier works well) so confirmation emails actually arrive.
+Supabase's built-in email sender is meant for testing and is heavily rate-limited — a handful of messages per hour. For real users, connect a free SMTP provider so confirmation emails actually arrive, and so you can edit the templates.
 
-For a quick private test, you can turn **Confirm email** off temporarily and turn it back on afterwards.
+Resend's free tier works well:
+
+1. Sign up at [resend.com](https://resend.com) and create an **API key**.
+2. Without your own domain, Resend only lets you send to the address you signed up with, from `onboarding@resend.dev`. That is enough for a private, single-user vault. To email anyone else, verify a domain you own under Resend → Domains.
+3. In Supabase → **Authentication → Emails → SMTP**, enable custom SMTP:
+
+   | Field | Value |
+   |---|---|
+   | Host | `smtp.resend.com` |
+   | Port | `465` |
+   | Username | `resend` |
+   | Password | your Resend API key (`re_…`) |
+   | Sender email | `onboarding@resend.dev`, or an address on your verified domain |
+   | Sender name | `Vault` |
+
+4. Save. The Templates screen becomes editable, and **Authentication → Rate Limits** lets you raise the email limit.
+
+For a quick private test you can skip SMTP entirely: turn **Confirm email** off, create your account, then turn it back on.
 
 **For private use:** once you have created your own account, go back to **Sign In / Providers → Email** and turn off **Allow new users to sign up**. Nobody else can then create an account on your deployment.
 
@@ -169,16 +192,16 @@ The app runs at `http://localhost:3000`. `npm run typecheck` checks the types wi
 
 Paste each of these into **Authentication → Emails → Templates** in Supabase.
 
-**Confirm signup** — subject: `Confirm your Tijori account`
+**Confirm signup** — subject: `Confirm your Vault account`
 
 ```html
 <h2>Confirm your email</h2>
-<p>Confirm this address to finish creating your Tijori account.</p>
+<p>Confirm this address to finish creating your Vault account.</p>
 <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/vault">Confirm email</a></p>
 <p>If you didn't sign up, you can ignore this email.</p>
 ```
 
-**Reset password** — subject: `Reset your Tijori sign-in password`
+**Reset password** — subject: `Reset your Vault sign-in password`
 
 ```html
 <h2>Reset your sign-in password</h2>

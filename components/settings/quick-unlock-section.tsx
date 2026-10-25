@@ -98,7 +98,7 @@ export function QuickUnlockSection() {
       const { enrollPasskey } = await import('@/lib/crypto/passkey')
       const enrolment = await enrollPasskey({
         userId,
-        email: email ?? 'Tijori user',
+        email: email ?? `${APP_NAME} user`,
         appName: APP_NAME,
         vaultKey,
       })

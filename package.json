@@ -1,8 +1,8 @@
 {
-  "name": "tijori",
+  "name": "vault",
   "version": "1.0.0",
   "private": true,
-  "description": "Tijori — a zero-knowledge password manager. Your vault is encrypted on your device; the server only ever stores ciphertext.",
+  "description": "Vault — a zero-knowledge password manager. Everything is encrypted on your device; the server only ever stores ciphertext.",
   "engines": {
     "node": ">=22.0.0"
   },

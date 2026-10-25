@@ -1,5 +1,5 @@
 -- =============================================================
--- Tijori database schema (Supabase / Postgres)
+-- Vault database schema (Supabase / Postgres)
 -- Paste into Supabase → SQL Editor → New query → Run.
 -- Safe to run again: uses IF NOT EXISTS / CREATE OR REPLACE / DROP ... IF EXISTS.
 -- The server only ever stores ciphertext. Never add plaintext columns.

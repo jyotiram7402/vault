@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Download, X } from 'lucide-react'
+import { APP_NAME, STORAGE_PREFIX } from '@/lib/config'
 import { isStandalone } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 
@@ -13,7 +14,7 @@ import { Button } from '@/components/ui/button'
  * instructions instead.
  */
 
-const DISMISS_KEY = 'tijori-install-dismissed'
+const DISMISS_KEY = `${STORAGE_PREFIX}-install-dismissed`
 
 // Not in lib.dom yet.
 interface BeforeInstallPromptEvent extends Event {
@@ -97,14 +98,14 @@ export function InstallPrompt() {
       <div className="flex items-start gap-3">
         <Download aria-hidden="true" className="mt-0.5 size-5 shrink-0 text-safe" />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-ink">Install Tijori on this device</p>
+          <p className="text-sm font-medium text-ink">Install {APP_NAME} on this device</p>
           {ios ? (
             <p className="mt-0.5 text-sm text-ink-muted">
               Tap Share, then Add to Home Screen.
             </p>
           ) : (
             <p className="mt-0.5 text-sm text-ink-muted">
-              It opens full screen and starts straight at your vault.
+              It opens full screen and starts straight at your items.
             </p>
           )}
           {!ios ? (

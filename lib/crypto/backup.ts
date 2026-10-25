@@ -39,7 +39,8 @@ export interface BackupFile {
 }
 
 export class BackupFormatError extends Error {
-  constructor(message = 'That file isn’t a Tijori backup.') {
+  // No app name here: lib/crypto must not depend on branding.
+  constructor(message = 'That file isn’t a backup from this app.') {
     super(message)
     this.name = 'BackupFormatError'
   }

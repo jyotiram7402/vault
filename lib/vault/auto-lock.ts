@@ -1,3 +1,5 @@
+import { STORAGE_PREFIX } from '@/lib/config'
+
 /**
  * Auto-lock.
  *
@@ -64,7 +66,7 @@ export function startAutoLock({ getTimeoutMs, onLock }: AutoLockOptions): () => 
 
 /** Throttling after wrong master passwords (not secret, so localStorage is fine). */
 
-const THROTTLE_KEY = 'tijori-unlock-throttle'
+const THROTTLE_KEY = `${STORAGE_PREFIX}-unlock-throttle`
 const FREE_ATTEMPTS = 3
 const MAX_DELAY_SECONDS = 60
 

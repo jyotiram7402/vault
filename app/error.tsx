@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { TriangleAlert } from 'lucide-react'
+import { APP_NAME } from '@/lib/config'
 import { Button } from '@/components/ui/button'
 
 export default function ErrorBoundary({
@@ -15,7 +16,7 @@ export default function ErrorBoundary({
   useEffect(() => {
     // Only the digest, never the message: an error message could contain
     // fragments of whatever the failing code was holding.
-    if (error.digest) console.error('Tijori error digest:', error.digest)
+    if (error.digest) console.error(`${APP_NAME} error digest:`, error.digest)
   }, [error])
 
   return (

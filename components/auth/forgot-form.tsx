@@ -21,7 +21,9 @@ export function ForgotForm() {
     // exists is an account-enumeration leak.
     await supabase.auth
       .resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        // Via the callback route for the same reason as signup: Supabase's
+        // default template sends a `code` that must be exchanged first.
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
       })
       .catch(() => undefined)
 

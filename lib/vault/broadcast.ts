@@ -1,3 +1,5 @@
+import { STORAGE_PREFIX } from '@/lib/config'
+
 /**
  * Cross-tab session messages.
  *
@@ -8,7 +10,7 @@
  * id. BroadcastChannel is same-origin, but there is no reason to send more.
  */
 
-const CHANNEL_NAME = 'tijori-session'
+const CHANNEL_NAME = `${STORAGE_PREFIX}-session`
 
 export type SessionMessage = { type: 'lock' } | { type: 'signout' }
 

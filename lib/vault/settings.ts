@@ -1,12 +1,14 @@
 /**
- * Preferences, kept in localStorage under `tijori-settings`.
+ * Preferences, kept in localStorage under `<STORAGE_PREFIX>-settings`.
  *
  * Nothing here is secret: how long until auto-lock, how long before the
  * clipboard is cleared, and whether the privacy screen is on. Validated every
  * time it is read, because localStorage can hold anything.
  */
 
-const STORAGE_KEY = 'tijori-settings'
+import { STORAGE_PREFIX } from '@/lib/config'
+
+const STORAGE_KEY = `${STORAGE_PREFIX}-settings`
 
 export interface VaultSettings {
   autoLockMinutes: number

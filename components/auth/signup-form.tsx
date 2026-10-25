@@ -54,7 +54,17 @@ export function SignupForm() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${window.location.origin}/vault` },
+      options: {
+        // Point at the callback route rather than straight at /vault.
+        // Supabase's DEFAULT email template builds its link from this value,
+        // and that link carries a `code` that has to be exchanged for a
+        // session. /auth/callback does the exchange and then forwards to
+        // /vault; /vault itself is proxy-protected, so the code would be
+        // stripped by the redirect to /login before anything could use it.
+        // Our own template uses token_hash and ignores this value entirely,
+        // so setting it costs nothing and makes both templates work.
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/vault`,
+      },
     })
 
     if (signUpError) {

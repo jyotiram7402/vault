@@ -6,7 +6,7 @@ export function SiteFooter() {
     <footer className="safe-bottom mt-20 border-t border-line">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <p className="text-sm text-ink-muted">
-          {APP_NAME} — your vault is sealed before it leaves your device.
+          {APP_NAME} — sealed on your device before anything leaves it.
         </p>
         <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-5 gap-y-2">
           <Link href="/privacy" className="text-sm text-ink-muted transition-colors hover:text-ink">

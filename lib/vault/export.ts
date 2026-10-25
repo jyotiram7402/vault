@@ -1,4 +1,5 @@
 import { createBackup, type BackupFile } from '@/lib/crypto/backup'
+import { APP_SLUG } from '@/lib/config'
 import { downloadTextFile, isoDateStamp } from '@/lib/utils'
 import { hostOf } from '@/lib/security/url'
 import { stringifyCsv } from '@/lib/vault/csv'
@@ -64,8 +65,10 @@ export async function downloadEncryptedBackup(
   password: string,
 ): Promise<BackupFile> {
   const file = await createBackup(payloads, password)
+  // The file NAME follows the app name; the format id INSIDE the file does
+  // not, so backups made before a rename still import afterwards.
   downloadTextFile(
-    `tijori-backup-${isoDateStamp()}.json`,
+    `${APP_SLUG}-backup-${isoDateStamp()}.json`,
     JSON.stringify(file, null, 2),
     'application/json;charset=utf-8',
   )
@@ -124,7 +127,11 @@ export function buildPlainCsv(items: readonly VaultItem[]): string {
 }
 
 export function downloadPlainCsv(items: readonly VaultItem[]): void {
-  downloadTextFile(`tijori-export-${isoDateStamp()}.csv`, buildPlainCsv(items), 'text/csv;charset=utf-8')
+  downloadTextFile(
+    `${APP_SLUG}-export-${isoDateStamp()}.csv`,
+    buildPlainCsv(items),
+    'text/csv;charset=utf-8',
+  )
 }
 
 /** How many items a plain CSV would leave out (cards). */

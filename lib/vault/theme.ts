@@ -1,15 +1,17 @@
 /**
  * Theme preference.
  *
- * Stored in the `tijori-theme` cookie so the root layout can read it on the
+ * Stored in the `<STORAGE_PREFIX>-theme` cookie so the root layout can read it on the
  * server and set `data-theme` on <html> before anything paints. That is why no
  * inline theme script is needed, which matters: an inline script would need a
  * nonce and would weaken the strict CSP for no real gain.
  */
 
+import { STORAGE_PREFIX } from '@/lib/config'
+
 export type Theme = 'system' | 'light' | 'dark'
 
-export const THEME_COOKIE = 'tijori-theme'
+export const THEME_COOKIE = `${STORAGE_PREFIX}-theme`
 
 const ONE_YEAR_SECONDS = 31_536_000
 

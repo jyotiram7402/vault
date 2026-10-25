@@ -220,7 +220,7 @@ export function parseImportCsv(text: string, existing: readonly VaultItem[]): Im
   }
 }
 
-/** Payloads from a Tijori backup, re-stamped so they import as new items. */
+/** Payloads from an encrypted backup, re-stamped so they import as new items. */
 export function prepareBackupImport(
   payloads: readonly ItemPayload[],
   existing: readonly VaultItem[],

@@ -4,6 +4,7 @@ import { Suspense, lazy, useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Lock, Command as CommandIcon, X } from 'lucide-react'
+import { APP_NAME } from '@/lib/config'
 import { cn } from '@/lib/utils'
 import { postSessionMessage } from '@/lib/vault/broadcast'
 import { lock } from '@/lib/vault/store'
@@ -115,7 +116,7 @@ export function AppShell({ onSignOut, notice, children }: AppShellProps) {
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Mobile top bar */}
         <header className="safe-top sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-surface px-3 py-2 md:hidden">
-          <Link href="/vault" className="rounded-btn" aria-label="Tijori vault">
+          <Link href="/vault" className="rounded-btn" aria-label={`${APP_NAME} home`}>
             <Logo />
           </Link>
           <div className="ml-auto flex items-center">

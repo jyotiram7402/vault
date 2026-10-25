@@ -1,6 +1,6 @@
 # Security
 
-Tijori is a zero-knowledge password manager: your vault is encrypted in your browser before anything is sent, and the server only ever stores ciphertext.
+Vault is a zero-knowledge password manager: everything is encrypted in your browser before anything is sent, and the server only ever stores ciphertext.
 
 This document describes what that means precisely, what it does not protect against, and how to report a problem.
 
@@ -8,7 +8,7 @@ This document describes what that means precisely, what it does not protect agai
 
 ## Threat model
 
-### What Tijori is designed to resist
+### What this app is designed to resist
 
 | Threat | Defence |
 |---|---|
@@ -24,7 +24,7 @@ This document describes what that means precisely, what it does not protect agai
 | Leaking which sites you use | Website icons are never fetched. Sites are drawn as locally generated monograms. |
 | Leaking password lengths | Payloads are padded with spaces to a multiple of 256 bytes before encryption. |
 
-### What Tijori cannot resist
+### What this app cannot resist
 
 These are in section 3.8 of the build brief, and they are worth repeating plainly.
 

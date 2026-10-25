@@ -2,6 +2,7 @@
 
 import { Suspense, lazy, useState } from 'react'
 import { Download, Eye, Upload } from 'lucide-react'
+import { APP_NAME } from '@/lib/config'
 import { formatDate } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { fetchRawSample } from '@/lib/vault/api'
@@ -48,7 +49,7 @@ export function DataSection() {
       <div className="flex flex-col divide-y divide-line">
         <SettingsRow
           label="Import"
-          description="From Chrome, Edge, Firefox, Safari, Bitwarden, LastPass, 1Password, or a Tijori backup."
+          description={`From Chrome, Edge, Firefox, Safari, Bitwarden, LastPass, 1Password, or a ${APP_NAME} backup.`}
         >
           <Button onClick={() => setImportOpen(true)}>
             <Upload aria-hidden="true" className="size-4" />

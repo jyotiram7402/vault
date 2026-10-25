@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import './globals.css'
 import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from '@/lib/config'
 import { siteUrl } from '@/lib/env'
+import { THEME_COOKIE } from '@/lib/vault/theme'
 import { RegisterSw } from '@/components/pwa/register-sw'
 import { ToastProvider } from '@/components/ui/toast'
 
@@ -64,7 +65,7 @@ export default async function RootLayout({
   // Reading a cookie makes every page render per request, which is what the
   // nonce-based CSP needs anyway. No inline theme script is required.
   const cookieStore = await cookies()
-  const stored = cookieStore.get('tijori-theme')?.value
+  const stored = cookieStore.get(THEME_COOKIE)?.value
   const theme = stored === 'dark' || stored === 'light' ? stored : undefined
 
   return (

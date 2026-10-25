@@ -1,6 +1,8 @@
-# Tijori — project memory
+# Vault — project memory
 
-Tijori is a zero-knowledge password manager: a Next.js 16 App Router app where every vault item is encrypted in the browser with AES-256-GCM under a key wrapped by Argon2id + HKDF from a master password that never leaves the device. Supabase provides sign-in and a Postgres database that stores only ciphertext, protected by Row Level Security. It installs as a PWA, works offline enough to say so, and runs entirely on free tiers.
+The app is named through `APP_NAME` in `lib/config.ts` (currently "Vault", originally "Tijori"). The crypto protocol string is deliberately NOT derived from it — see "Protocol constants" below.
+
+This is a zero-knowledge password manager: a Next.js 16 App Router app where every vault item is encrypted in the browser with AES-256-GCM under a key wrapped by Argon2id + HKDF from a master password that never leaves the device. Supabase provides sign-in and a Postgres database that stores only ciphertext, protected by Row Level Security. It installs as a PWA, works offline enough to say so, and runs entirely on free tiers.
 
 ## Stack
 
@@ -44,7 +46,7 @@ components/vault/        gate, setup wizard, unlock, recovery, shell, list,
                          detail, form, palette, privacy screen
 components/health/       score ring, issue list, breach scan
 components/settings/     one file per settings section + import/export dialogs
-lib/config.ts            APP_NAME, tagline, description, REPO_URL
+lib/config.ts            APP_NAME, APP_SLUG, STORAGE_PREFIX, tagline, REPO_URL
 lib/env.ts               NEXT_PUBLIC_* reads, never throws
 lib/crypto/              bytes, random, constants, kdf, keys, items,
                          recovery-key, backup, passkey
@@ -56,6 +58,12 @@ lib/supabase/            client, server, proxy, auth-errors
 lib/brand/app-icon.tsx   next/og icon renderer shared by the PWA icon routes
 lib/totp.ts              RFC 6238 codes
 ```
+
+## Three name constants, three different jobs
+
+- **`APP_NAME`** (`lib/config.ts`) — everything a person reads. `APP_SLUG` is its lower-case form, used only for download file names.
+- **`STORAGE_PREFIX`** (`lib/config.ts`, currently `vault`) — the namespace for localStorage keys, the theme cookie and the BroadcastChannel. A literal, **not** derived from `APP_NAME`: browser storage is a persistence contract, and coupling it to a display name would make a rename silently reset everyone's preferences. The service worker's cache name in `public/sw.js` is the one copy that must be kept in step by hand, because a static JS file cannot import it.
+- **`CRYPTO_PROTOCOL`** (`lib/crypto/constants.ts`, `tijori-vault-v1`) — never change it, and never derive it from either of the above. See below.
 
 ## Conventions
 

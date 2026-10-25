@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Logo } from '@/components/brand/logo'
+import { APP_NAME } from '@/lib/config'
 import { isSupabaseConfigured } from '@/lib/env'
 import { createClient } from '@/lib/supabase/server'
 
@@ -22,7 +23,7 @@ export async function SiteHeader() {
   return (
     <header className="safe-top border-b border-line">
       <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-4 sm:px-6">
-        <Link href="/" className="rounded-btn" aria-label="Tijori, home">
+        <Link href="/" className="rounded-btn" aria-label={`${APP_NAME}, home`}>
           <Logo />
         </Link>
 

@@ -1,5 +1,5 @@
 /**
- * Tijori service worker.
+ * Service worker.
  *
  * Deliberately minimal. It exists for one reason: to show a readable page when
  * the device is offline.
@@ -11,7 +11,9 @@
  */
 
 const VERSION = 'v1'
-const CACHE_NAME = `tijori-${VERSION}`
+// Plain JavaScript served as a static file, so it cannot import
+// STORAGE_PREFIX from lib/config. Keep this in step with it by hand.
+const CACHE_NAME = `vault-${VERSION}`
 const OFFLINE_URL = '/offline.html'
 
 self.addEventListener('install', (event) => {

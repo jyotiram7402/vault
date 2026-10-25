@@ -6,8 +6,7 @@ import { SiteFooter } from '@/components/landing/site-footer'
 
 export const metadata: Metadata = {
   title: 'Privacy',
-  description:
-    'What Tijori stores, what it cannot store, why there is no tracking, and how to delete your account.',
+  description: `What ${APP_NAME} stores, what it cannot store, why there is no tracking, and how to delete your account.`,
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

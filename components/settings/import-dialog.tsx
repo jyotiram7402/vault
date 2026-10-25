@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react'
 import { ChevronDown, FileUp, TriangleAlert } from 'lucide-react'
+import { APP_NAME } from '@/lib/config'
 import { createClient } from '@/lib/supabase/client'
 import { createItemsInBatches } from '@/lib/vault/items'
 import { getVaultKey, upsertItem } from '@/lib/vault/store'
@@ -20,7 +21,7 @@ type Tab = 'csv' | 'backup'
 
 const TABS = [
   { value: 'csv' as const, label: 'From a browser' },
-  { value: 'backup' as const, label: 'Tijori backup' },
+  { value: 'backup' as const, label: `${APP_NAME} backup` },
 ]
 
 const BROWSER_HELP = [
