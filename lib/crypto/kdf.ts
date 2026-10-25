@@ -12,6 +12,32 @@ import { KDF_MINIMUMS, type KdfParams } from '@/lib/crypto/constants'
  * hundred kilobytes and is only needed on the unlock and setup paths.
  */
 
+/**
+ * The hash-wasm module, fetched once and shared.
+ *
+ * It is a few hundred kilobytes of WebAssembly, and it used to be requested
+ * only at the moment someone pressed Unlock — so the download sat in front of
+ * Argon2id instead of beside it. `preloadKdf()` lets the vault gate start that
+ * fetch while it is already waiting on the network for the keyset.
+ */
+let hashWasm: Promise<typeof import('hash-wasm')> | null = null
+
+function loadHashWasm(): Promise<typeof import('hash-wasm')> {
+  if (!hashWasm) {
+    hashWasm = import('hash-wasm').catch((error: unknown) => {
+      // Let a later attempt try again rather than caching the failure.
+      hashWasm = null
+      throw error
+    })
+  }
+  return hashWasm
+}
+
+/** Fire-and-forget warm-up. Safe to call more than once; failures are ignored. */
+export function preloadKdf(): void {
+  void loadHashWasm().catch(() => undefined)
+}
+
 export class WeakKdfParamsError extends Error {
   constructor() {
     super(
@@ -44,7 +70,7 @@ export async function deriveKeyMaterial(
   params: KdfParams,
 ): Promise<Uint8Array<ArrayBuffer>> {
   assertKdfParamsAllowed(params)
-  const { argon2id } = await import('hash-wasm')
+  const { argon2id } = await loadHashWasm()
   const material = await argon2id({
     password: password.normalize('NFKC'),
     salt,

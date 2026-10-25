@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { CircleAlert, LoaderCircle } from 'lucide-react'
 import { isSupabaseConfigured } from '@/lib/env'
 import { createClient } from '@/lib/supabase/client'
+import { preloadKdf } from '@/lib/crypto/kdf'
 import { fetchKeyset } from '@/lib/vault/api'
 import { startAutoLock } from '@/lib/vault/auto-lock'
 import { postSessionMessage, subscribeSession } from '@/lib/vault/broadcast'
@@ -95,6 +96,11 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
 
       setUserId(session.user.id)
       setEmail(session.user.email ?? null)
+
+      // Whether this ends at setup or at unlock, Argon2id is needed next.
+      // Start fetching its WebAssembly now, so the download overlaps the
+      // keyset request below instead of delaying the first key derivation.
+      preloadKdf()
 
       const { data: aal, error: aalError } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
       if (aalError) throw aalError

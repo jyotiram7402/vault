@@ -16,7 +16,7 @@ import {
   recordUnlockFailure,
   unlockWaitSeconds,
 } from '@/lib/vault/auto-lock'
-import type { KeysetRow } from '@/lib/vault/types'
+import type { KeysetRow, PasskeyRow } from '@/lib/vault/types'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { PasswordInput } from '@/components/ui/password-input'
@@ -52,6 +52,8 @@ export function UnlockScreen({
   const [wait, setWait] = useState(0)
   const [resetOpen, setResetOpen] = useState(false)
   const [quickUnlockReady, setQuickUnlockReady] = useState(false)
+  // Kept so pressing "Unlock with fingerprint" doesn't refetch what we have.
+  const [passkeyRows, setPasskeyRows] = useState<PasskeyRow[]>([])
   const [quickBusy, setQuickBusy] = useState(false)
 
   // Count down the throttle delay after repeated wrong passwords.
@@ -70,7 +72,10 @@ export function UnlockScreen({
         if (!isPasskeyApiAvailable()) return
         const supabase = createClient()
         const rows = await fetchPasskeys(supabase, userId)
-        if (active && rows.length > 0) setQuickUnlockReady(true)
+        if (active && rows.length > 0) {
+          setPasskeyRows(rows)
+          setQuickUnlockReady(true)
+        }
       } catch {
         // No quick unlock on this device. The master password still works.
       }
@@ -85,8 +90,12 @@ export function UnlockScreen({
     async (vaultKey: CryptoKey) => {
       const supabase = createClient()
       setDial('success')
-      await sleep(450)
-      const failed = await openVault({ supabase, vaultKey, userId, email, keyset })
+      // The bolts slide back WHILE the items load, not before. Awaiting the
+      // animation first added a flat 450 ms to every single unlock.
+      const [failed] = await Promise.all([
+        openVault({ supabase, vaultKey, userId, email, keyset }),
+        sleep(450),
+      ])
       clearUnlockFailures()
       onUnlocked(failed)
     },
@@ -147,7 +156,8 @@ export function UnlockScreen({
     try {
       const { unlockWithPasskey } = await import('@/lib/crypto/passkey')
       const supabase = createClient()
-      const rows = await fetchPasskeys(supabase, userId)
+      // Loaded when this screen mounted; only refetch if that hadn't finished.
+      const rows = passkeyRows.length > 0 ? passkeyRows : await fetchPasskeys(supabase, userId)
       const { vaultKey, passkeyId } = await unlockWithPasskey(userId, rows)
       void touchPasskey(supabase, userId, passkeyId)
       await finish(vaultKey)

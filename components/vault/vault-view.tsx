@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -22,7 +22,8 @@ import {
   replaceItems,
   upsertItem,
 } from '@/lib/vault/store'
-import { useVault } from '@/lib/vault/use-vault'
+import { useVault, useVaultView } from '@/lib/vault/use-vault'
+import { setFilter, setViewState, syncViewFromLocation } from '@/lib/vault/view-state'
 import { CATEGORY_IDS, type CategoryId, type ItemPayload, type ItemType, type VaultItem } from '@/lib/vault/types'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
@@ -96,10 +97,9 @@ function useIsDesktop(): boolean {
 
 export function VaultView() {
   const router = useRouter()
-  const pathname = usePathname()
-  const searchParams = useSearchParams()
   const { toast } = useToast()
   const { items, userId, lastSyncedAt } = useVault()
+  const view = useVaultView()
   const isDesktop = useIsDesktop()
 
   const [rawQuery, setRawQuery] = useState('')
@@ -111,21 +111,29 @@ export function VaultView() {
   const [discardOpen, setDiscardOpen] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<VaultItem | null>(null)
 
-  const filterKeyParam = searchParams.get('filter')
-  const filter = useMemo(() => parseFilter(filterKeyParam), [filterKeyParam])
-  const selectedId = searchParams.get('item')
-  const newType = searchParams.get('new')
-  const editing = searchParams.get('edit') === '1'
-  const focusPassword = searchParams.get('focus') === 'password'
-  const importOpen = searchParams.get('import') === '1'
+  const filter = useMemo(() => parseFilter(view.filter), [view.filter])
+  const selectedId = view.item
+  const newType = view.create
+  const editing = view.edit
+  const focusPassword = view.focusPassword
+  const importOpen = view.importOpen
 
   const selected = useMemo(
     () => (selectedId ? (items.find((item) => item.id === selectedId) ?? null) : null),
     [items, selectedId],
   )
-  // `?new=choose` opens the type picker; `?new=login` goes straight to a form.
-  const creating = isItemType(newType) || newType === 'choose'
+  // `choose` opens the type picker; a concrete type goes straight to a form.
+  const creating = newType !== null
   const formOpen = creating || (editing && selected !== null)
+
+  // Adopt the address bar on mount, and whenever the user goes back or
+  // forward. Everything in between is handled without touching the router.
+  useEffect(() => {
+    syncViewFromLocation()
+    const handlePopState = () => syncViewFromLocation()
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   // 80 ms is enough to stop every keystroke re-ranking a large vault.
   useEffect(() => {
@@ -136,21 +144,6 @@ export function VaultView() {
   const visible = useMemo(
     () => sortItems(searchItems(filterItems(items, filter), query), query.trim() ? 'updated' : sort),
     [items, filter, query, sort],
-  )
-
-  const setParams = useCallback(
-    (updates: Record<string, string | null>, replace = false) => {
-      const params = new URLSearchParams(searchParams.toString())
-      for (const [key, value] of Object.entries(updates)) {
-        if (value === null) params.delete(key)
-        else params.set(key, value)
-      }
-      const search = params.toString()
-      const url = search ? `${pathname}?${search}` : pathname
-      if (replace) router.replace(url)
-      else router.push(url)
-    },
-    [pathname, router, searchParams],
   )
 
   // ------------------------------------------------------------------ sync --
@@ -203,8 +196,8 @@ export function VaultView() {
     setFormDirty(false)
     setFormError(null)
     setDiscardOpen(false)
-    setParams({ new: null, edit: null, focus: null })
-  }, [setParams])
+    setViewState({ create: null, edit: false, focusPassword: false })
+  }, [])
 
   const requestCloseForm = useCallback(() => {
     if (formDirty) setDiscardOpen(true)
@@ -233,7 +226,10 @@ export function VaultView() {
             tone: 'success',
           })
           setFormDirty(false)
-          setParams({ new: null, edit: null, focus: null, item: created.id }, true)
+          setViewState(
+            { create: null, edit: false, focusPassword: false, item: created.id },
+            { replace: true },
+          )
         } else if (selected) {
           const updated = await saveItem(
             supabase,
@@ -254,7 +250,7 @@ export function VaultView() {
             tone: 'success',
           })
           setFormDirty(false)
-          setParams({ edit: null, focus: null })
+          setViewState({ edit: false, focusPassword: false })
         }
       } catch (cause) {
         if (cause instanceof SessionExpiredError) {
@@ -266,7 +262,7 @@ export function VaultView() {
         setSaving(false)
       }
     },
-    [creating, requireOnline, router, selected, setParams, toast, userId],
+    [creating, requireOnline, router, selected, toast, userId],
   )
 
   const handleToggleFavorite = useCallback(
@@ -299,7 +295,9 @@ export function VaultView() {
       if (!userId || !requireOnline()) return
       setDeleteTarget(null)
       removeItem(item.id)
-      if (selectedId === item.id) setParams({ item: null, edit: null, focus: null }, true)
+      if (selectedId === item.id) {
+        setViewState({ item: null, edit: false, focusPassword: false }, { replace: true })
+      }
 
       try {
         const supabase = createClient()
@@ -329,7 +327,7 @@ export function VaultView() {
         })
       }
     },
-    [requireOnline, selectedId, setParams, toast, userId],
+    [requireOnline, selectedId, toast, userId],
   )
 
   // --------------------------------------------------------------- rendering
@@ -352,7 +350,7 @@ export function VaultView() {
   const detailNode = selected ? (
     <ItemDetail
       item={selected}
-      onEdit={() => setParams({ edit: '1' })}
+      onEdit={() => setViewState({ edit: true })}
       onDelete={() => setDeleteTarget(selected)}
       onToggleFavorite={() => void handleToggleFavorite(selected)}
     />
@@ -370,7 +368,8 @@ export function VaultView() {
         <FilterBar
           query={rawQuery}
           onQueryChange={setRawQuery}
-          activeFilter={filterKeyParam ?? 'all'}
+          activeFilter={view.filter}
+          onFilterChange={setFilter}
           sort={sort}
           onSortChange={setSort}
           items={items}
@@ -381,14 +380,14 @@ export function VaultView() {
             totalCount={items.length}
             query={query}
             selectedId={selectedId}
-            onSelect={(item) => setParams({ item: item.id })}
+            onSelect={(item) => setViewState({ item: item.id })}
             onToggleFavorite={(item) => void handleToggleFavorite(item)}
             onClearSearch={() => {
               setRawQuery('')
               setQuery('')
             }}
-            onAdd={(type) => setParams({ new: type })}
-            onImport={() => setParams({ import: '1' })}
+            onAdd={(type) => setViewState({ create: type })}
+            onImport={() => setViewState({ importOpen: true })}
             isFavoritesFilter={filter.kind === 'favorites'}
           />
         </div>
@@ -409,7 +408,7 @@ export function VaultView() {
               title="Nothing selected"
               description="Choose an item on the left, or add a new one."
               actions={
-                <Button variant="primary" onClick={() => setParams({ new: 'login' })}>
+                <Button variant="primary" onClick={() => setViewState({ create: 'login' })}>
                   <Plus aria-hidden="true" className="size-4" />
                   Add login
                 </Button>
@@ -422,7 +421,7 @@ export function VaultView() {
       {/* Floating add button on phones and tablets */}
       <button
         type="button"
-        onClick={() => setParams({ new: 'choose' })}
+        onClick={() => setViewState({ create: 'choose' })}
         aria-label="Add item"
         className="fixed right-4 bottom-20 z-30 inline-flex size-14 items-center justify-center rounded-full bg-primary text-on-primary shadow-overlay transition-[filter] hover:brightness-110 lg:hidden"
       >
@@ -444,7 +443,7 @@ export function VaultView() {
 
           <Sheet
             open={!formOpen && selected !== null}
-            onClose={() => setParams({ item: null }, false)}
+            onClose={() => setViewState({ item: null })}
             title={selected?.data.title ?? 'Item'}
           >
             {detailNode}
@@ -494,7 +493,10 @@ export function VaultView() {
 
       {importOpen ? (
         <Suspense fallback={null}>
-          <ImportDialog open onClose={() => setParams({ import: null }, true)} />
+          <ImportDialog
+            open
+            onClose={() => setViewState({ importOpen: false }, { replace: true })}
+          />
         </Suspense>
       ) : null}
     </div>

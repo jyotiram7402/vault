@@ -145,15 +145,17 @@ export function RecoveryFlow({
       setConfirm('')
 
       setDial('success')
-      await sleep(450)
-
-      const failed = await openVault({
-        supabase,
-        vaultKey: sessionKey,
-        userId,
-        email,
-        keyset: updated,
-      })
+      // Animation and loading in parallel, as on the unlock screen.
+      const [failed] = await Promise.all([
+        openVault({
+          supabase,
+          vaultKey: sessionKey,
+          userId,
+          email,
+          keyset: updated,
+        }),
+        sleep(450),
+      ])
       clearUnlockFailures()
       setStep('done')
       // Let the "make a new Recovery Key" note be seen before handing over.

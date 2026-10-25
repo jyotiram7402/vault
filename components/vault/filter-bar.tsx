@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { ArrowUpDown, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -29,6 +28,7 @@ export interface FilterBarProps {
   query: string
   onQueryChange: (value: string) => void
   activeFilter: string
+  onFilterChange: (key: string) => void
   sort: SortMode
   onSortChange: (mode: SortMode) => void
   items: readonly VaultItem[]
@@ -38,6 +38,7 @@ export function FilterBar({
   query,
   onQueryChange,
   activeFilter,
+  onFilterChange,
   sort,
   onSortChange,
   items,
@@ -101,9 +102,11 @@ export function FilterBar({
           const active = activeFilter === chip.key
           return (
             <li key={chip.key} className="shrink-0">
-              <Link
-                href={chip.key === 'all' ? '/vault' : `/vault?filter=${encodeURIComponent(chip.key)}`}
-                aria-current={active ? 'page' : undefined}
+              {/* A button, not a link: see chooseFilter in nav-rail. */}
+              <button
+                type="button"
+                onClick={() => onFilterChange(chip.key)}
+                aria-pressed={active}
                 className={cn(
                   'inline-flex min-h-9 items-center rounded-full border px-3 text-sm font-medium transition-colors',
                   active
@@ -112,7 +115,7 @@ export function FilterBar({
                 )}
               >
                 {chip.label}
-              </Link>
+              </button>
             </li>
           )
         })}

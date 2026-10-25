@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname, useSearchParams } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   Command,
   CreditCard,
@@ -17,7 +17,8 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Logo } from '@/components/brand/logo'
-import { useVault } from '@/lib/vault/use-vault'
+import { useVault, useVaultView } from '@/lib/vault/use-vault'
+import { setFilter, viewHref } from '@/lib/vault/view-state'
 import {
   CATEGORY_IDS,
   CATEGORY_LABELS,
@@ -56,11 +57,24 @@ export function NavRail({
   onOpenPalette: () => void
 }) {
   const pathname = usePathname()
-  const searchParams = useSearchParams()
+  const router = useRouter()
   const { items } = useVault()
+  const view = useVaultView()
 
-  const activeFilter = searchParams.get('filter') ?? 'all'
+  const activeFilter = view.filter
   const onItemsPage = pathname === '/vault'
+
+  /**
+   * Filters are buttons, not links, on purpose. A <Link> to `/vault?filter=…`
+   * is a server navigation even though the route is unchanged — it re-runs the
+   * proxy, re-checks the session with Supabase and refetches the page, all to
+   * narrow a list that is already in memory. From another vault page we do
+   * still have to navigate for real.
+   */
+  const chooseFilter = (key: string) => {
+    if (onItemsPage) setFilter(key)
+    else router.push(viewHref({ filter: key }))
+  }
 
   const categories = usedCategories(items)
   const orderedCategories = CATEGORY_IDS.filter((id) => categories.includes(id))
@@ -83,20 +97,21 @@ export function NavRail({
           const active = onItemsPage && activeFilter === filter.key
           return (
             <li key={filter.key}>
-              <Link
-                href={filter.key === 'all' ? '/vault' : `/vault?filter=${filter.key}`}
+              <button
+                type="button"
+                onClick={() => chooseFilter(filter.key)}
                 title={filter.label}
-                aria-current={active ? 'page' : undefined}
+                aria-pressed={active}
                 className={cn(
                   itemClasses,
-                  'justify-center lg:justify-start',
+                  'w-full justify-center lg:justify-start',
                   active ? 'bg-surface-2 text-ink' : 'text-ink-muted hover:bg-surface-2 hover:text-ink',
                 )}
               >
                 <filter.icon aria-hidden="true" className="size-5 shrink-0" />
                 <span className="hidden lg:inline">{filter.label}</span>
                 <span className="sr-only lg:hidden">{filter.label}</span>
-              </Link>
+              </button>
             </li>
           )
         })}
@@ -113,17 +128,19 @@ export function NavRail({
               const active = onItemsPage && activeFilter === key
               return (
                 <li key={id}>
-                  <Link
-                    href={`/vault?filter=${key}`}
-                    aria-current={active ? 'page' : undefined}
+                  <button
+                    type="button"
+                    onClick={() => chooseFilter(key)}
+                    aria-pressed={active}
                     className={cn(
                       itemClasses,
+                      'w-full',
                       active ? 'bg-surface-2 text-ink' : 'text-ink-muted hover:bg-surface-2 hover:text-ink',
                     )}
                   >
                     <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-safe" />
                     {CATEGORY_LABELS[id]}
-                  </Link>
+                  </button>
                 </li>
               )
             })}
@@ -140,18 +157,19 @@ export function NavRail({
               const active = onItemsPage && activeFilter === key
               return (
                 <li key={tag}>
-                  <Link
-                    href={`/vault?filter=${encodeURIComponent(key)}`}
-                    aria-current={active ? 'page' : undefined}
+                  <button
+                    type="button"
+                    onClick={() => chooseFilter(key)}
+                    aria-pressed={active}
                     className={cn(
                       itemClasses,
-                      'truncate',
+                      'w-full truncate',
                       active ? 'bg-surface-2 text-ink' : 'text-ink-muted hover:bg-surface-2 hover:text-ink',
                     )}
                   >
                     <Tag aria-hidden="true" className="size-4 shrink-0" />
                     <span className="truncate">{tag}</span>
-                  </Link>
+                  </button>
                 </li>
               )
             })}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CreditCard, Dices, KeyRound, Plus, StickyNote, Trash2 } from 'lucide-react'
 import { cardBrand, cn, groupCardNumber, luhnValid } from '@/lib/utils'
 import { hostOf, normalizeWebsite } from '@/lib/security/url'
@@ -27,8 +27,14 @@ import { PasswordInput } from '@/components/ui/password-input'
 import { Select } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { PasswordGenerator } from '@/components/generator/password-generator'
 import { StrengthMeter } from '@/components/vault/strength-meter'
+
+// Behind a "Generate" toggle, so it stays out of the vault's first load.
+const PasswordGenerator = lazy(() =>
+  import('@/components/generator/password-generator').then((module) => ({
+    default: module.PasswordGenerator,
+  })),
+)
 
 /**
  * Add and edit.
@@ -446,12 +452,16 @@ export function ItemForm({
               </button>
               {showGenerator ? (
                 <div className="rounded-panel border border-line bg-bg p-4">
-                  <PasswordGenerator
-                    onUse={(value) => {
-                      update('password', value)
-                      setShowGenerator(false)
-                    }}
-                  />
+                  <Suspense
+                    fallback={<p className="text-sm text-ink-muted">Loading generator…</p>}
+                  >
+                    <PasswordGenerator
+                      onUse={(value) => {
+                        update('password', value)
+                        setShowGenerator(false)
+                      }}
+                    />
+                  </Suspense>
                 </div>
               ) : null}
             </div>
