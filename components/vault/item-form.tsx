@@ -1,7 +1,7 @@
 'use client'
 
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { CreditCard, Dices, KeyRound, Plus, StickyNote, Trash2 } from 'lucide-react'
+import { ChevronDown, CreditCard, Dices, KeyRound, Plus, StickyNote, Trash2 } from 'lucide-react'
 import { cardBrand, cn, groupCardNumber, luhnValid } from '@/lib/utils'
 import { hostOf, normalizeWebsite } from '@/lib/security/url'
 import { estimateStrength } from '@/lib/password/strength'
@@ -179,6 +179,25 @@ export function ItemForm({
   const [totpError, setTotpError] = useState<string | null>(null)
   const [titleError, setTitleError] = useState<string | null>(null)
   const [urlError, setUrlError] = useState<string | null>(null)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+
+  /**
+   * Quick entry is the common case: a name and a password. Everything else
+   * folds away — but opens automatically when an existing item already uses
+   * it, so nothing is ever hidden from the person editing it.
+   */
+  const [showMore, setShowMore] = useState(() => {
+    if (isNew) return false
+    const initial = initialState(item, startType, defaultTitle)
+    return Boolean(
+      initial.url ||
+        initial.username ||
+        initial.totp ||
+        initial.tags ||
+        initial.favorite ||
+        initial.fields.length > 0,
+    )
+  })
 
   const initialRef = useRef(JSON.stringify(initialState(item, startType, defaultTitle)))
   const passwordRef = useRef<HTMLInputElement>(null)
@@ -219,6 +238,7 @@ export function ItemForm({
     setTitleError(null)
     setUrlError(null)
     setTotpError(null)
+    setPasswordError(null)
 
     const now = new Date().toISOString()
     const tags = parseTags(state.tags)
@@ -232,6 +252,8 @@ export function ItemForm({
       const normalized = normalizeWebsite(state.url)
       if (!normalized) {
         setUrlError('Enter a web address like example.com')
+        // The field lives under "More options"; open it so the error is seen.
+        setShowMore(true)
         return null
       }
       url = normalized.slice(0, LIMITS.url)
@@ -274,6 +296,12 @@ export function ItemForm({
       return card
     }
 
+    // A login is a credential; without one it is really a note.
+    if (!state.password) {
+      setPasswordError('Add a password, or save this as a secure note instead.')
+      return null
+    }
+
     // Validate a 2FA key by actually generating a code with it.
     let totp: string | undefined
     if (state.totp.trim()) {
@@ -285,6 +313,8 @@ export function ItemForm({
         setTotpError(
           cause instanceof Error ? cause.message : 'That doesn’t look like a valid setup key.',
         )
+        // As above: don't hide the reason the save failed.
+        setShowMore(true)
         return null
       }
     }
@@ -403,34 +433,8 @@ export function ItemForm({
 
         {state.type === 'login' ? (
           <>
-            <Field id="form-url" label="Website" optional error={urlError}>
-              <Input
-                id="form-url"
-                value={state.url}
-                onChange={(event) => update('url', event.target.value)}
-                placeholder="example.com"
-                inputMode="url"
-                maxLength={LIMITS.url}
-                autoComplete="off"
-                secret
-                invalid={Boolean(urlError)}
-                aria-describedby={describedBy('form-url', undefined, urlError)}
-              />
-            </Field>
-
-            <Field id="form-username" label="Username or email" optional>
-              <Input
-                id="form-username"
-                value={state.username}
-                onChange={(event) => update('username', event.target.value)}
-                maxLength={LIMITS.username}
-                autoComplete="off"
-                secret
-              />
-            </Field>
-
             <div className="flex flex-col gap-2">
-              <Field id="form-password" label="Password" optional>
+              <Field id="form-password" label="Password" required error={passwordError}>
                 <PasswordInput
                   id="form-password"
                   ref={passwordRef}
@@ -438,6 +442,8 @@ export function ItemForm({
                   onChange={(event) => update('password', event.target.value)}
                   maxLength={LIMITS.password}
                   autoComplete="new-password"
+                  invalid={Boolean(passwordError)}
+                  aria-describedby={passwordError ? 'form-password-error' : undefined}
                 />
               </Field>
               {state.password ? <StrengthMeter result={strength} /> : null}
@@ -466,29 +472,6 @@ export function ItemForm({
               ) : null}
             </div>
 
-            <Field
-              id="form-totp"
-              label="2FA setup key"
-              optional
-              hint="Paste the setup key or otpauth link from the site."
-              error={totpError}
-            >
-              <Input
-                id="form-totp"
-                value={state.totp}
-                onChange={(event) => update('totp', event.target.value)}
-                maxLength={LIMITS.totp}
-                autoComplete="off"
-                secret
-                className="mono"
-                invalid={Boolean(totpError)}
-                aria-describedby={describedBy(
-                  'form-totp',
-                  'Paste the setup key or otpauth link from the site.',
-                  totpError,
-                )}
-              />
-            </Field>
           </>
         ) : null}
 
@@ -596,21 +579,6 @@ export function ItemForm({
               />
             </Field>
 
-            <Field
-              id="form-tags"
-              label="Tags"
-              optional
-              hint="Separate tags with commas."
-            >
-              <Input
-                id="form-tags"
-                value={state.tags}
-                onChange={(event) => update('tags', event.target.value)}
-                autoComplete="off"
-                secret
-                aria-describedby="form-tags-hint"
-              />
-            </Field>
           </>
         ) : null}
 
@@ -626,14 +594,94 @@ export function ItemForm({
           />
         </Field>
 
-        <Switch
-          label="Favourite"
-          description="Keeps this item in the Favourites filter."
-          checked={state.favorite}
-          onChange={(favorite) => update('favorite', favorite)}
-        />
+        {/* Everything below is optional and folded away by default, so the
+            common case — a name and a password — stays a short form. */}
+        <details
+          open={showMore}
+          onToggle={(event) => setShowMore(event.currentTarget.open)}
+          className="rounded-panel border border-line"
+        >
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-ink">
+            More options
+            <ChevronDown aria-hidden="true" className="size-4 shrink-0 text-ink-muted" />
+          </summary>
 
-        {state.type === 'login' ? (
+          <div className="flex flex-col gap-4 border-t border-line p-4">
+            {state.type === 'login' ? (
+              <>
+                <Field id="form-url" label="Website" optional error={urlError}>
+                  <Input
+                    id="form-url"
+                    value={state.url}
+                    onChange={(event) => update('url', event.target.value)}
+                    placeholder="example.com"
+                    inputMode="url"
+                    maxLength={LIMITS.url}
+                    autoComplete="off"
+                    secret
+                    invalid={Boolean(urlError)}
+                    aria-describedby={describedBy('form-url', undefined, urlError)}
+                  />
+                </Field>
+
+                <Field id="form-username" label="Username or email" optional>
+                  <Input
+                    id="form-username"
+                    value={state.username}
+                    onChange={(event) => update('username', event.target.value)}
+                    maxLength={LIMITS.username}
+                    autoComplete="off"
+                    secret
+                  />
+                </Field>
+
+                <Field
+                  id="form-totp"
+                  label="2FA setup key"
+                  optional
+                  hint="Paste the setup key or otpauth link from the site."
+                  error={totpError}
+                >
+                  <Input
+                    id="form-totp"
+                    value={state.totp}
+                    onChange={(event) => update('totp', event.target.value)}
+                    maxLength={LIMITS.totp}
+                    autoComplete="off"
+                    secret
+                    className="mono"
+                    invalid={Boolean(totpError)}
+                    aria-describedby={describedBy(
+                      'form-totp',
+                      'Paste the setup key or otpauth link from the site.',
+                      totpError,
+                    )}
+                  />
+                </Field>
+              </>
+            ) : null}
+
+            {state.type !== 'note' ? (
+              <Field id="form-tags" label="Tags" optional hint="Separate tags with commas.">
+                <Input
+                  id="form-tags"
+                  value={state.tags}
+                  onChange={(event) => update('tags', event.target.value)}
+                  autoComplete="off"
+                  secret
+                  aria-describedby="form-tags-hint"
+                />
+              </Field>
+            ) : null}
+
+            <Switch
+              label="Favourite"
+              description="Keeps this item in the Favourites filter."
+              checked={state.favorite}
+              onChange={(favorite) => update('favorite', favorite)}
+            />
+
+            {state.type === 'login' ? (
           <fieldset className="rounded-panel border border-line p-4">
             <legend className="px-1 text-sm font-medium text-ink">Custom fields</legend>
             <ul className="flex flex-col gap-3">
@@ -723,7 +771,9 @@ export function ItemForm({
               </Button>
             ) : null}
           </fieldset>
-        ) : null}
+            ) : null}
+          </div>
+        </details>
 
         {error ? (
           <p role="alert" className="rounded-field border border-danger/50 bg-surface-2 px-3 py-2.5 text-sm font-medium text-danger">

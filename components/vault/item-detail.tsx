@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import {
   ChevronDown,
   Ellipsis,
@@ -28,7 +28,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { IconButton } from '@/components/ui/icon-button'
 import { Menu } from '@/components/ui/menu'
+import { isRepromptSatisfied } from '@/lib/vault/reprompt'
 import { CopyButton } from '@/components/vault/copy-button'
+import { RepromptDialog } from '@/components/vault/reprompt-dialog'
 import { Monogram } from '@/components/vault/monogram'
 import { SecretText } from '@/components/vault/secret-text'
 import { TotpCode } from '@/components/vault/totp-code'
@@ -36,8 +38,16 @@ import { TotpCode } from '@/components/vault/totp-code'
 /** Revealed secrets hide themselves again after this long. */
 const REVEAL_SECONDS = 20
 
+/**
+ * Every "show this secret" request goes through here. ItemDetail supplies a
+ * guard that either runs it immediately or asks for the master password first.
+ * The default lets it through, so these rows still work on their own.
+ */
+const RevealGuard = createContext<(reveal: () => void) => void>((reveal) => reveal())
+
 function useReveal(): [boolean, (value: boolean) => void] {
   const [revealed, setRevealed] = useState(false)
+  const guard = useContext(RevealGuard)
 
   useEffect(() => {
     if (!revealed) return
@@ -45,7 +55,16 @@ function useReveal(): [boolean, (value: boolean) => void] {
     return () => clearTimeout(timer)
   }, [revealed])
 
-  return [revealed, setRevealed]
+  // Hiding is always free; only showing is guarded.
+  const setReveal = (next: boolean) => {
+    if (!next) {
+      setRevealed(false)
+      return
+    }
+    guard(() => setRevealed(true))
+  }
+
+  return [revealed, setReveal]
 }
 
 function Row({
@@ -120,6 +139,13 @@ export function ItemDetail({ item, onEdit, onDelete, onToggleFavorite }: ItemDet
   const favorite = payload.favorite === true
 
   const [showNotes, setShowNotes] = useState(false)
+  const [pendingReveal, setPendingReveal] = useState<(() => void) | null>(null)
+
+  const guard = useCallback((reveal: () => void) => {
+    if (isRepromptSatisfied()) reveal()
+    // Stored, not run: the dialog runs it once the password checks out.
+    else setPendingReveal(() => reveal)
+  }, [])
 
   const strength = useMemo(() => {
     if (payload.type !== 'login' || !payload.password) return null
@@ -130,7 +156,8 @@ export function ItemDetail({ item, onEdit, onDelete, onToggleFavorite }: ItemDet
   }, [payload, host])
 
   return (
-    <article className="flex min-h-full flex-col">
+    <RevealGuard.Provider value={guard}>
+      <article className="flex min-h-full flex-col">
       <header className="flex items-start gap-3 border-b border-line px-4 py-4 sm:px-5">
         <Monogram seed={host || payload.title} label={payload.title} size="lg" />
         <div className="min-w-0 flex-1">
@@ -148,6 +175,11 @@ export function ItemDetail({ item, onEdit, onDelete, onToggleFavorite }: ItemDet
           ) : payload.type === 'card' ? (
             <p className="mt-0.5 text-sm text-ink-muted">
               {cardBrand(payload.number ?? '') ?? 'Payment card'}
+            </p>
+          ) : payload.type === 'login' ? (
+            // A login with no website used to fall through to "Secure note".
+            <p className="secret mt-0.5 truncate text-sm text-ink-muted">
+              {payload.username || 'Login'}
             </p>
           ) : (
             <p className="mt-0.5 text-sm text-ink-muted">Secure note</p>
@@ -326,7 +358,14 @@ export function ItemDetail({ item, onEdit, onDelete, onToggleFavorite }: ItemDet
       <footer className="px-4 py-4 text-xs text-ink-muted sm:px-5">
         Added {formatDate(item.createdAt)} · Updated {formatDate(item.updatedAt)}
       </footer>
-    </article>
+      </article>
+
+      <RepromptDialog
+        open={pendingReveal !== null}
+        onClose={() => setPendingReveal(null)}
+        onVerified={() => pendingReveal?.()}
+      />
+    </RevealGuard.Provider>
   )
 }
 

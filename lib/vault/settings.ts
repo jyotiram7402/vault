@@ -15,6 +15,8 @@ export interface VaultSettings {
   /** 0 means "never clear the clipboard". */
   clipboardSeconds: number
   privacyScreen: boolean
+  /** Ask for the master password again before showing a secret on screen. */
+  requireMasterToReveal: boolean
 }
 
 export const AUTO_LOCK_OPTIONS = [1, 5, 15, 30, 60] as const
@@ -24,6 +26,7 @@ export const DEFAULT_SETTINGS: VaultSettings = {
   autoLockMinutes: 5,
   clipboardSeconds: 30,
   privacyScreen: true,
+  requireMasterToReveal: true,
 }
 
 function validate(value: unknown): VaultSettings {
@@ -32,7 +35,10 @@ function validate(value: unknown): VaultSettings {
   const autoLock = record.autoLockMinutes
   const clipboard = record.clipboardSeconds
   const privacy = record.privacyScreen
+  const reprompt = record.requireMasterToReveal
   return {
+    requireMasterToReveal:
+      typeof reprompt === 'boolean' ? reprompt : DEFAULT_SETTINGS.requireMasterToReveal,
     autoLockMinutes:
       typeof autoLock === 'number' && (AUTO_LOCK_OPTIONS as readonly number[]).includes(autoLock)
         ? autoLock

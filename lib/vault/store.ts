@@ -1,4 +1,5 @@
 import { forgetClipboard } from '@/lib/vault/clipboard'
+import { clearReprompt } from '@/lib/vault/reprompt'
 import type { KeysetRow, VaultItem } from '@/lib/vault/types'
 
 /**
@@ -104,6 +105,7 @@ export function lock(reason: LockReason = 'manual'): void {
   vaultKey = null
   lastLockReason = reason
   forgetClipboard()
+  clearReprompt()
   if (wasUnlocked || snapshot !== LOCKED_SNAPSHOT) {
     setSnapshot(LOCKED_SNAPSHOT)
   }

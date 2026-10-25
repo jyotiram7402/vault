@@ -66,6 +66,15 @@ export function SecuritySection() {
 
         <div className="py-3">
           <Switch
+            label="Ask for your master password before showing a secret"
+            description="Guards against someone glancing at your screen. Copy buttons still work without it — lock the vault if you’re leaving the device."
+            checked={settings.requireMasterToReveal}
+            onChange={(requireMasterToReveal) => writeSettings({ requireMasterToReveal })}
+          />
+        </div>
+
+        <div className="py-3">
+          <Switch
             label="Privacy screen"
             description="Blurs passwords and other secrets whenever this window loses focus."
             checked={settings.privacyScreen}
