@@ -19,7 +19,11 @@ import {
 } from '@/lib/crypto/keys'
 import { generateRecoveryKey, recoveryKeyTail } from '@/lib/crypto/recovery-key'
 import { suggestMasterPassphrase } from '@/lib/password/generator'
-import { estimateStrength, masterPasswordProblem } from '@/lib/password/strength'
+import {
+  estimateStrength,
+  masterPasswordCaution,
+  masterPasswordProblem,
+} from '@/lib/password/strength'
 import { createClient } from '@/lib/supabase/client'
 import { insertKeyset } from '@/lib/vault/api'
 import { unlockSession } from '@/lib/vault/store'
@@ -83,6 +87,7 @@ export function SetupWizard({ userId, email, onReady }: SetupWizardProps) {
     () => estimateStrength(password, { email: email ?? undefined }),
     [password, email],
   )
+  const caution = useMemo(() => masterPasswordCaution(password, email), [password, email])
 
   const site = siteUrl()
   const kitText = prepared
@@ -291,7 +296,12 @@ export function SetupWizard({ userId, email, onReady }: SetupWizardProps) {
                   />
                 )}
               </Field>
-              {password ? <StrengthMeter result={strength} detailed /> : null}
+              {password ? (
+                <>
+                  <StrengthMeter result={strength} detailed />
+                  {caution ? <p className="text-sm text-warn">{caution}</p> : null}
+                </>
+              ) : null}
               <button
                 type="button"
                 onClick={handleSuggest}

@@ -12,7 +12,11 @@ import {
   verifyWrappedKey,
   wrapVaultKey,
 } from '@/lib/crypto/keys'
-import { estimateStrength, masterPasswordProblem } from '@/lib/password/strength'
+import {
+  estimateStrength,
+  masterPasswordCaution,
+  masterPasswordProblem,
+} from '@/lib/password/strength'
 import { createClient } from '@/lib/supabase/client'
 import { updateKeyset } from '@/lib/vault/api'
 import { setKeyset } from '@/lib/vault/store'
@@ -43,6 +47,7 @@ export function MasterPasswordSection() {
     () => estimateStrength(next, { email: email ?? undefined }),
     [next, email],
   )
+  const caution = useMemo(() => masterPasswordCaution(next, email), [next, email])
 
   const reset = () => {
     setCurrent('')
@@ -148,7 +153,12 @@ export function MasterPasswordSection() {
                 required
               />
             </Field>
-            {next ? <StrengthMeter result={strength} detailed /> : null}
+            {next ? (
+              <>
+                <StrengthMeter result={strength} detailed />
+                {caution ? <p className="text-sm text-warn">{caution}</p> : null}
+              </>
+            ) : null}
           </div>
 
           <Field id="mp-confirm" label="Confirm new master password" error={error}>

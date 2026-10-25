@@ -84,6 +84,8 @@ lib/totp.ts              RFC 6238 codes
 
 ## Decisions
 
+- **The master password policy is deliberately permissive** — six characters or more, and not the user's own email, enforced in `masterPasswordProblem` (`lib/password/strength.ts`). No minimum strength, no character-class rule: digits only or letters only are both accepted. The owner asked for this explicitly after being told the cost. `masterPasswordCaution()` surfaces the risk beside the strength meter instead of blocking. **Do not reinstate the strength gate as a "fix".** The 12-character minimum on the *account* (sign-in) password is unrelated, still in force, and also enforced by Supabase.
+
 - **Supabase client is untyped** (no generated database types, since that needs a CLI). Query results are cast to row interfaces in exactly one place, `lib/vault/api.ts`, through two small helpers with comments. Nothing else in the app casts.
 - **Extra modules beyond the brief's file list**, each small and single-purpose: `lib/supabase/auth-errors.ts` (friendly auth messages), `lib/vault/items.ts` (bridges crypto and the API so neither imports the other), `lib/vault/theme.ts` (theme cookie), `components/vault/vault-view.tsx` (the items page orchestrator, kept out of `app/` so the page stays a Server Component with a Suspense boundary), `components/settings/section.tsx` (the shared settings panel) and `components/settings/install-section.tsx`.
 - **View state is a module store, not router state.** `lib/vault/view-state.ts` owns which filter, item and form are showing; the URL (`/vault?filter=type:login`, `?item=`, `?new=`, `?edit=1`, `?focus=password`, `?import=1`) is kept in step with the native History API, and `popstate` syncs it back.

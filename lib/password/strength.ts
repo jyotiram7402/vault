@@ -151,8 +151,20 @@ function labelFor(bits: number): { score: StrengthScore; label: StrengthLabel } 
   return { score: 4, label: 'Excellent' }
 }
 
-/** The master password must clear this bar everywhere it is set or changed. */
-export const MASTER_PASSWORD_MIN_LENGTH = 12
+/**
+ * The only length rule on a master password.
+ *
+ * Deliberately minimal, by the owner's decision: six characters or more, and
+ * that is all. Digits only, letters only, any mixture — all accepted. There is
+ * no character-class requirement and no strength gate.
+ *
+ * THE TRADE-OFF, written down so it is not later mistaken for a bug: the
+ * master password is the only thing between a stolen copy of the encrypted
+ * rows and their contents. Argon2id at 64 MiB and three passes makes each
+ * guess expensive, but six digits is only a million guesses. Strength is still
+ * measured and shown beside the field — it simply no longer blocks saving.
+ */
+export const MASTER_PASSWORD_MIN_LENGTH = 6
 
 /**
  * One rule set shared by setup, recovery and "change master password", so the
@@ -167,16 +179,30 @@ export function masterPasswordProblem(
   if (password.length < MASTER_PASSWORD_MIN_LENGTH) {
     return `Use at least ${MASTER_PASSWORD_MIN_LENGTH} characters.`
   }
+  // Not a composition rule: one specific, catastrophic choice. Your email
+  // address is public and is the first thing anyone would try.
   if (email && password.trim().toLowerCase() === email.trim().toLowerCase()) {
     return 'Your master password can’t be your email address.'
-  }
-  if (estimateStrength(password, { email: email ?? undefined }).score < 3) {
-    return 'This needs to be rated Strong or better. Add length, or try the suggested passphrase.'
   }
   if (password !== confirm) {
     return 'The two passwords don’t match.'
   }
   return null
+}
+
+/**
+ * Advice, never a rule. Returns a sentence to show beside the strength meter
+ * when a master password is weak, or null when it is fine.
+ *
+ * This exists because the gate was removed: a weak master password is now
+ * allowed, so the consequence has to be stated rather than enforced. The meter
+ * already shows the rating and an estimated crack time; this adds the part
+ * that makes those numbers matter.
+ */
+export function masterPasswordCaution(password: string, email: string | null): string | null {
+  if (!password) return null
+  if (estimateStrength(password, { email: email ?? undefined }).score >= 3) return null
+  return 'This is the only thing protecting your vault if your encrypted data is ever copied, and nobody can reset it for you. You can still use it.'
 }
 
 export function estimateStrength(password: string, context: StrengthContext = {}): StrengthResult {

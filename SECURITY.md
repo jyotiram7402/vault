@@ -18,7 +18,7 @@ This document describes what that means precisely, what it does not protect agai
 | Someone steals your account password | They can sign in, but not open the vault. With two-factor on, Row Level Security refuses them even the ciphertext. |
 | An attacker swaps one item's ciphertext for another's | AES-GCM additional authenticated data binds every ciphertext to the user id, the item id and the format version. |
 | Someone walks up to your unlocked laptop | Auto-lock, lock-on-hidden, cross-tab locking, a privacy screen that blurs secrets when the window loses focus, and clipboard clearing. |
-| Offline brute force of the master password | Argon2id with 64 MiB of memory and three passes, with a per-user random salt. |
+| Offline brute force of the master password | Argon2id with 64 MiB of memory and three passes, with a per-user random salt. **How much that buys you depends entirely on the password you choose — see below.** |
 | Online guessing of the master password | Exponential backoff after three wrong attempts, capped at 60 seconds. |
 | Cross-site scripting | A strict nonce-based Content Security Policy with `strict-dynamic`; no third-party scripts at all. |
 | Leaking which sites you use | Website icons are never fetched. Sites are drawn as locally generated monograms. |
@@ -33,6 +33,14 @@ These are in section 3.8 of the build brief, and they are worth repeating plainl
 - **A malicious server could serve an older version of an item.** The AAD stops ciphertext being swapped between items or users, but it does not prove freshness. A server could withhold an update and replay a previous ciphertext for the same item.
 - **Supabase session cookies are readable by JavaScript.** The browser client needs them, so they are not `HttpOnly`. The strict CSP is the defence against XSS reading them.
 - **Losing both the master password and the Recovery Key means nobody can open the vault.** That is the cost of zero-knowledge encryption, and the app says so before setup finishes.
+
+- **The master password has no strength requirement.** The only rules are six characters or more, and not your own email address. Digits only, letters only, any mixture — all permitted.
+
+  This is a deliberate choice by whoever deployed this app, and it is the weakest point in everything described above. Argon2id makes each guess expensive, not impossible: a six-digit master password is a million guesses, and a memory-hard KDF does not save you from a search space that small. Someone who obtains a copy of the encrypted rows can grind them offline, at their leisure, with no rate limit to stop them — the throttling in this app only applies to the unlock screen.
+
+  Every other defence here assumes the master password is hard to guess. If it isn't, they are decoration. The strength meter and an estimated crack time are shown while you type; they inform, they no longer block.
+
+  To change this back, restore the strength gate in `masterPasswordProblem` in `lib/password/strength.ts`.
 
 ---
 

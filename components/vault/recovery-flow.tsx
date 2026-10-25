@@ -18,7 +18,11 @@ import {
   decodeRecoveryKey,
   looksLikeRecoveryKey,
 } from '@/lib/crypto/recovery-key'
-import { estimateStrength, masterPasswordProblem } from '@/lib/password/strength'
+import {
+  estimateStrength,
+  masterPasswordCaution,
+  masterPasswordProblem,
+} from '@/lib/password/strength'
 import { createClient } from '@/lib/supabase/client'
 import { updateKeyset } from '@/lib/vault/api'
 import { openVault } from '@/lib/vault/items'
@@ -71,6 +75,7 @@ export function RecoveryFlow({
     () => estimateStrength(password, { email: email ?? undefined }),
     [password, email],
   )
+  const caution = useMemo(() => masterPasswordCaution(password, email), [password, email])
 
   const handleCheckKey = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -257,7 +262,12 @@ export function RecoveryFlow({
                   autoFocus
                 />
               </Field>
-              {password ? <StrengthMeter result={strength} detailed /> : null}
+              {password ? (
+                <>
+                  <StrengthMeter result={strength} detailed />
+                  {caution ? <p className="text-sm text-warn">{caution}</p> : null}
+                </>
+              ) : null}
             </div>
 
             <Field id="recovery-confirm" label="Confirm master password" error={error}>
