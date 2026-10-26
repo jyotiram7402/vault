@@ -69,7 +69,7 @@ export function ItemRow({ item, query, selected, onSelect, onToggleFavorite }: I
         />
       </button>
 
-      {password ? <CopyButton value={password} label="Password" size="sm" /> : null}
+      {password ? <CopyButton value={password} label="Password" size="sm" guarded /> : null}
     </li>
   )
 }

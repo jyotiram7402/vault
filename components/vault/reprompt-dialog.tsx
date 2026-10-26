@@ -1,12 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { Eye } from 'lucide-react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
+import { ShieldCheck } from 'lucide-react'
 import { nextTwoFrames } from '@/lib/utils'
 import { fromBase64 } from '@/lib/crypto/bytes'
 import { vaultKeyAad } from '@/lib/crypto/constants'
 import { WrongPasswordError, deriveMasterKek, unwrapVaultKey } from '@/lib/crypto/keys'
-import { REPROMPT_GRACE_MINUTES, markReprompted } from '@/lib/vault/reprompt'
+import {
+  REPROMPT_GRACE_MINUTES,
+  getServerRepromptPending,
+  isRepromptPending,
+  resolveReprompt,
+  subscribeRepromptRequest,
+} from '@/lib/vault/reprompt'
 import { useVault } from '@/lib/vault/use-vault'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
@@ -14,35 +20,39 @@ import { Field } from '@/components/ui/field'
 import { PasswordInput } from '@/components/ui/password-input'
 
 /**
- * "Enter your master password to show this."
+ * "Enter your master password" — shown whenever something asks to reveal or
+ * copy a stored secret and the grace period has run out.
  *
- * The check is real: it derives the key from what was typed and unwraps the
- * stored wrapped key with it. A wrong password fails the unwrap. The key that
- * comes out is thrown away immediately — the session already has one — so this
- * only ever answers yes or no.
+ * Rendered once, in the app shell, and driven by the request store. That is
+ * what lets a row in the list and the command palette use it too, not just the
+ * item detail pane.
  *
- * That costs an Argon2id run, which is deliberately about a second, so one
- * success covers a few minutes rather than every field.
+ * The check is real: it derives a key from what was typed and unwraps the
+ * stored wrapped key with it, so a wrong password fails. The key that comes
+ * out is discarded — the session already has one — so this only ever answers
+ * yes or no.
  */
-export function RepromptDialog({
-  open,
-  onClose,
-  onVerified,
-}: {
-  open: boolean
-  onClose: () => void
-  onVerified: () => void
-}) {
+export function RepromptHost() {
+  const open = useSyncExternalStore(
+    subscribeRepromptRequest,
+    isRepromptPending,
+    getServerRepromptPending,
+  )
   const { userId, keyset } = useVault()
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const close = () => {
-    setPassword('')
-    setError(null)
-    onClose()
-  }
+  // Never leave a typed master password sitting in state between requests.
+  useEffect(() => {
+    if (!open) {
+      setPassword('')
+      setError(null)
+      setBusy(false)
+    }
+  }, [open])
+
+  const deny = () => resolveReprompt(false)
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -67,10 +77,9 @@ export function RepromptDialog({
         false,
       )
 
-      markReprompted()
       setPassword('')
-      onVerified()
-      onClose()
+      // Starts the grace period and releases whatever was waiting.
+      resolveReprompt(true)
     } catch (cause) {
       setError(
         cause instanceof WrongPasswordError
@@ -79,7 +88,6 @@ export function RepromptDialog({
             ? cause.message
             : 'Couldn’t check that password.',
       )
-    } finally {
       setBusy(false)
     }
   }
@@ -87,18 +95,18 @@ export function RepromptDialog({
   return (
     <Dialog
       open={open}
-      onClose={close}
+      onClose={deny}
       title="Enter your master password"
-      description="Needed before a secret is shown on screen."
+      description="Needed before a secret is shown or copied."
       size="sm"
       footer={
         <>
-          <Button onClick={close} disabled={busy}>
+          <Button onClick={deny} disabled={busy}>
             Cancel
           </Button>
           <Button type="submit" form="reprompt-form" variant="primary" loading={busy}>
-            <Eye aria-hidden="true" className="size-4" />
-            Show
+            <ShieldCheck aria-hidden="true" className="size-4" />
+            Continue
           </Button>
         </>
       }

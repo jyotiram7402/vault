@@ -66,8 +66,8 @@ export function SecuritySection() {
 
         <div className="py-3">
           <Switch
-            label="Ask for your master password before showing a secret"
-            description="Guards against someone glancing at your screen. Copy buttons still work without it — lock the vault if you’re leaving the device."
+            label="Ask for your master password before showing or copying a secret"
+            description="Covers reveal and copy, on the list and in the command palette. You’re asked once, then not again for 5 minutes or until the vault locks."
             checked={settings.requireMasterToReveal}
             onChange={(requireMasterToReveal) => writeSettings({ requireMasterToReveal })}
           />

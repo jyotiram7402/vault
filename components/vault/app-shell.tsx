@@ -13,6 +13,7 @@ import { IconButton } from '@/components/ui/icon-button'
 import { NavRail } from '@/components/vault/nav-rail'
 import { BottomNav } from '@/components/vault/bottom-nav'
 import { InstallPrompt } from '@/components/vault/install-prompt'
+import { RepromptHost } from '@/components/vault/reprompt-dialog'
 
 // Desktop-only extras: loaded the first time they are opened.
 const CommandPalette = lazy(() =>
@@ -156,6 +157,10 @@ export function AppShell({ onSignOut, notice, children }: AppShellProps) {
         <InstallPrompt />
         <BottomNav />
       </div>
+
+      {/* One instance for the whole vault: rows, the detail pane and the
+          command palette all raise their requests through the same store. */}
+      <RepromptHost />
 
       {paletteOpen ? (
         <Suspense fallback={null}>

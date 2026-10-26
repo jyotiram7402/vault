@@ -84,6 +84,8 @@ lib/totp.ts              RFC 6238 codes
 
 ## Decisions
 
+- **Revealing *and copying* a stored secret asks for the master password again** (setting `requireMasterToReveal`, on by default). `lib/vault/reprompt.ts` holds both the grace period and a pending-request store; `RepromptHost` renders the one dialog, in `AppShell`. Callers use `requireReprompt(): Promise<boolean>` — `CopyButton` takes a `guarded` prop, and `useReveal` in `item-detail.tsx` awaits it. It is a module store rather than a React context because the item row and the command palette are outside the detail pane's tree. Guarded: passwords, password history, card numbers, CVV, PIN, hidden custom fields, notes. Not guarded: usernames, a freshly generated password, the Recovery Key during setup, and the live TOTP code (ephemeral, and useless without the password). Note the clipboard caveat documented on `requireReprompt`.
+
 - **The master password policy is deliberately permissive** — six characters or more, and not the user's own email, enforced in `masterPasswordProblem` (`lib/password/strength.ts`). No minimum strength, no character-class rule: digits only or letters only are both accepted. The owner asked for this explicitly after being told the cost. `masterPasswordCaution()` surfaces the risk beside the strength meter instead of blocking. **Do not reinstate the strength gate as a "fix".** The 12-character minimum on the *account* (sign-in) password is unrelated, still in force, and also enforced by Supabase.
 
 - **Supabase client is untyped** (no generated database types, since that needs a CLI). Query results are cast to row interfaces in exactly one place, `lib/vault/api.ts`, through two small helpers with comments. Nothing else in the app casts.

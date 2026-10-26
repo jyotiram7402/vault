@@ -17,7 +17,7 @@ This document describes what that means precisely, what it does not protect agai
 | Another user tries to read your rows | Row Level Security on every table, with owner-only policies, plus AAD binding each ciphertext to its owner's user id. |
 | Someone steals your account password | They can sign in, but not open the vault. With two-factor on, Row Level Security refuses them even the ciphertext. |
 | An attacker swaps one item's ciphertext for another's | AES-GCM additional authenticated data binds every ciphertext to the user id, the item id and the format version. |
-| Someone walks up to your unlocked laptop | Auto-lock, lock-on-hidden, cross-tab locking, a privacy screen that blurs secrets when the window loses focus, and clipboard clearing. |
+| Someone walks up to your unlocked laptop | Auto-lock, lock-on-hidden, cross-tab locking, a privacy screen that blurs secrets when the window loses focus, clipboard clearing, and an optional master-password prompt before any stored secret is revealed **or copied**. |
 | Offline brute force of the master password | Argon2id with 64 MiB of memory and three passes, with a per-user random salt. **How much that buys you depends entirely on the password you choose — see below.** |
 | Online guessing of the master password | Exponential backoff after three wrong attempts, capped at 60 seconds. |
 | Cross-site scripting | A strict nonce-based Content Security Policy with `strict-dynamic`; no third-party scripts at all. |
@@ -33,6 +33,10 @@ These are in section 3.8 of the build brief, and they are worth repeating plainl
 - **A malicious server could serve an older version of an item.** The AAD stops ciphertext being swapped between items or users, but it does not prove freshness. A server could withhold an update and replay a previous ciphertext for the same item.
 - **Supabase session cookies are readable by JavaScript.** The browser client needs them, so they are not `HttpOnly`. The strict CSP is the defence against XSS reading them.
 - **Losing both the master password and the Recovery Key means nobody can open the vault.** That is the cost of zero-knowledge encryption, and the app says so before setup finishes.
+
+- **The reveal-and-copy prompt is a barrier, not a boundary.** With it on (the default), showing or copying a stored secret asks for your master password again, verified by a real Argon2id derivation, then stays satisfied for five minutes or until the vault locks. It covers the detail pane, the copy button on each row, and the command palette.
+
+  What it stops is a person: someone at your unlocked machine, or reading over your shoulder. What it cannot stop is code. The vault is unlocked, so the decrypted items are in the page's memory, and anything able to run JavaScript there can read them without ever touching a button. Locking the vault is the real control when you step away; this just makes casual access inconvenient.
 
 - **The master password has no strength requirement.** The only rules are six characters or more, and not your own email address. Digits only, letters only, any mixture — all permitted.
 

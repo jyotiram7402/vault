@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Check, Copy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { copyPlain, copySecret } from '@/lib/vault/clipboard'
+import { requireReprompt } from '@/lib/vault/reprompt'
 import { useToast } from '@/components/ui/toast'
 
 /**
@@ -20,11 +21,24 @@ export interface CopyButtonProps {
   label: string
   /** Plain values (usernames, addresses) skip the clipboard wipe. */
   plain?: boolean
+  /**
+   * Ask for the master password before copying. Set on stored vault secrets;
+   * left off for things the person can already see, like a password they just
+   * generated or a Recovery Key shown during setup.
+   */
+  guarded?: boolean
   size?: 'sm' | 'md'
   className?: string
 }
 
-export function CopyButton({ value, label, plain = false, size = 'md', className }: CopyButtonProps) {
+export function CopyButton({
+  value,
+  label,
+  plain = false,
+  guarded = false,
+  size = 'md',
+  className,
+}: CopyButtonProps) {
   const { toast } = useToast()
   const [copied, setCopied] = useState(false)
   const [remaining, setRemaining] = useState(0)
@@ -40,6 +54,8 @@ export function CopyButton({ value, label, plain = false, size = 'md', className
   }, [])
 
   const handleCopy = async () => {
+    if (guarded && !(await requireReprompt())) return
+
     try {
       if (plain) {
         await copyPlain(value)

@@ -19,6 +19,7 @@ import { hostOf } from '@/lib/security/url'
 import { searchItems } from '@/lib/vault/search'
 import { useVault } from '@/lib/vault/use-vault'
 import { copySecret } from '@/lib/vault/clipboard'
+import { requireReprompt } from '@/lib/vault/reprompt'
 import { applyTheme, nextTheme, readTheme } from '@/lib/vault/theme'
 import { useToast } from '@/components/ui/toast'
 import { Monogram } from '@/components/vault/monogram'
@@ -164,13 +165,16 @@ export function CommandPalette({
     if (index < matchedItems.length) {
       const item = matchedItems[index]
       if (copyPassword && item.data.type === 'login' && item.data.password) {
+        // Close first: the palette is itself a modal dialog, and stacking the
+        // master password prompt on top of it reads badly.
+        onClose()
+        if (!(await requireReprompt())) return
         try {
           await copySecret(item.data.password)
           toast({ message: 'Password copied', tone: 'success' })
         } catch {
           toast({ message: 'This browser wouldn’t let the page copy.', tone: 'danger' })
         }
-        onClose()
         return
       }
       router.push(`/vault?item=${encodeURIComponent(item.id)}`)
