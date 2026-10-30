@@ -95,6 +95,11 @@ export async function hkdfAesKey(
   usages: KeyUsage[],
 ): Promise<CryptoKey> {
   const base = await crypto.subtle.importKey('raw', material, 'HKDF', false, ['deriveKey'])
+  // importKey has copied the bytes into the CryptoKey; the raw material has
+  // no further use, so overwrite it. Defence in depth, not a guarantee —
+  // JavaScript cannot promise no other copy exists (the wasm heap, the GC) —
+  // but it removes the one copy we do control.
+  material.fill(0)
   return crypto.subtle.deriveKey(
     {
       name: 'HKDF',

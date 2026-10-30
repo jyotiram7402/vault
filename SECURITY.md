@@ -17,7 +17,7 @@ This document describes what that means precisely, what it does not protect agai
 | Another user tries to read your rows | Row Level Security on every table, with owner-only policies, plus AAD binding each ciphertext to its owner's user id. |
 | Someone steals your account password | They can sign in, but not open the vault. With two-factor on, Row Level Security refuses them even the ciphertext. |
 | An attacker swaps one item's ciphertext for another's | AES-GCM additional authenticated data binds every ciphertext to the user id, the item id and the format version. |
-| Someone walks up to your unlocked laptop | Auto-lock, lock-on-hidden, cross-tab locking, a privacy screen that blurs secrets when the window loses focus, clipboard clearing, and an optional master-password prompt before any stored secret is revealed **or copied**. |
+| Someone walks up to your unlocked laptop | An immediate lock the moment the tab is hidden (on by default), an idle timer behind it, cross-tab locking, a privacy screen that blurs secrets when the window loses focus, clipboard clearing, and a master-password prompt before any stored secret is revealed **or copied**. A **Security status** checklist in Settings shows which of these are on. |
 | Offline brute force of the master password | Argon2id with 64 MiB of memory and three passes, with a per-user random salt. **How much that buys you depends entirely on the password you choose — see below.** |
 | Online guessing of the master password | Exponential backoff after three wrong attempts, capped at 60 seconds. |
 | Cross-site scripting | A strict nonce-based Content Security Policy with `strict-dynamic`; no third-party scripts at all. |

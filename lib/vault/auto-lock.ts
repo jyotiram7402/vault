@@ -3,23 +3,45 @@ import { STORAGE_PREFIX } from '@/lib/config'
 /**
  * Auto-lock.
  *
- * Two triggers: no interaction for the configured time, and coming back to a
- * tab that was hidden for longer than that time. The second matters more than
- * it looks — a phone with the screen off fires no pointer events at all, so
- * idle alone would never notice.
+ * Three triggers: no interaction for the configured time; coming back to a
+ * tab that was hidden for longer than that time; and — when "lock when I
+ * switch away" is on — the tab being hidden at all. The hidden-tab cases
+ * matter more than they look: a phone with the screen off fires no pointer
+ * events, so idle alone would never notice.
  */
 
 const CHECK_INTERVAL_MS = 15_000
 
 const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'touchstart', 'scroll', 'wheel'] as const
 
+/**
+ * Immediate lock-on-hide can be suspended while something on screen must not
+ * be lost. The cases that need it are real: a newly created Recovery Key
+ * (the old one has already stopped working), and file pickers or print
+ * dialogs, which on some platforms briefly report the tab as hidden.
+ */
+let hideLockHolds = 0
+
+/** Suspend immediate lock-on-hide. Returns a release function; call it once. */
+export function holdLockOnHide(): () => void {
+  hideLockHolds += 1
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    hideLockHolds -= 1
+  }
+}
+
 export interface AutoLockOptions {
   /** Read fresh each tick so a change in Settings takes effect immediately. */
   getTimeoutMs: () => number
+  /** Read fresh on every visibility change, for the same reason. */
+  getLockOnHide: () => boolean
   onLock: (reason: 'idle' | 'hidden') => void
 }
 
-export function startAutoLock({ getTimeoutMs, onLock }: AutoLockOptions): () => void {
+export function startAutoLock({ getTimeoutMs, getLockOnHide, onLock }: AutoLockOptions): () => void {
   if (typeof window === 'undefined') return () => undefined
 
   let lastActivity = Date.now()
@@ -37,6 +59,8 @@ export function startAutoLock({ getTimeoutMs, onLock }: AutoLockOptions): () => 
   const handleVisibility = () => {
     if (document.visibilityState === 'hidden') {
       hiddenSince = Date.now()
+      // Lock the instant the tab is hidden, unless a flow has asked us not to.
+      if (getLockOnHide() && hideLockHolds === 0 && !stopped) onLock('hidden')
       return
     }
     const since = hiddenSince
@@ -100,24 +124,42 @@ function writeThrottle(state: ThrottleState): void {
   }
 }
 
+/**
+ * The same record, kept in memory as well. localStorage is trivially wiped by
+ * clearing site data; this tab's memory of the attempts it has already seen is
+ * not. Whichever is stricter applies.
+ */
+let memory: ThrottleState = { failures: 0, nextAllowedAt: 0 }
+
+function currentThrottle(): ThrottleState {
+  const stored = readThrottle()
+  return {
+    failures: Math.max(stored.failures, memory.failures),
+    nextAllowedAt: Math.max(stored.nextAllowedAt, memory.nextAllowedAt),
+  }
+}
+
 /** Seconds the user must still wait, or 0 when they may try now. */
 export function unlockWaitSeconds(): number {
-  const { nextAllowedAt } = readThrottle()
+  const { nextAllowedAt } = currentThrottle()
   const remaining = Math.ceil((nextAllowedAt - Date.now()) / 1000)
   return remaining > 0 ? remaining : 0
 }
 
 /** Record a wrong master password and return how long to wait next time. */
 export function recordUnlockFailure(): number {
-  const state = readThrottle()
+  const state = currentThrottle()
   const failures = state.failures + 1
   const delaySeconds =
     failures <= FREE_ATTEMPTS ? 0 : Math.min(2 ** (failures - FREE_ATTEMPTS), MAX_DELAY_SECONDS)
-  writeThrottle({ failures, nextAllowedAt: Date.now() + delaySeconds * 1000 })
+  const next = { failures, nextAllowedAt: Date.now() + delaySeconds * 1000 }
+  memory = next
+  writeThrottle(next)
   return delaySeconds
 }
 
 export function clearUnlockFailures(): void {
+  memory = { failures: 0, nextAllowedAt: 0 }
   try {
     window.localStorage.removeItem(THROTTLE_KEY)
   } catch {

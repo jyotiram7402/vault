@@ -24,14 +24,24 @@ export function SecuritySection() {
 
   return (
     <SettingsSection
+      id="security"
       title="Security"
       description="How quickly the vault closes itself when you step away."
     >
       <div className="flex flex-col divide-y divide-line">
+        <div className="py-3">
+          <Switch
+            label="Lock when I switch away"
+            description="Locks the instant this tab is hidden — switching tabs, minimising, or switching apps on a phone. Strict: you’ll unlock again when you come back. Turn it off if it gets in your way and rely on the timer below."
+            checked={settings.lockOnHide}
+            onChange={(lockOnHide) => writeSettings({ lockOnHide })}
+          />
+        </div>
+
         <SettingsRow
           label="Lock automatically"
           description="After this long without any activity, and when the tab has been hidden for longer than this."
-        >
+>
           <Select
             aria-label="Lock automatically"
             value={String(settings.autoLockMinutes)}

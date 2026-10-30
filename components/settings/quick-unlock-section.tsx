@@ -147,6 +147,7 @@ export function QuickUnlockSection() {
 
   return (
     <SettingsSection
+      id="quick-unlock"
       title="Quick unlock"
       description="Open your vault with a fingerprint, face or device PIN. It never replaces your master password."
     >

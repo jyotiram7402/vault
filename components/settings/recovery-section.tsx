@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Download, Printer } from 'lucide-react'
 import { APP_NAME } from '@/lib/config'
 import { siteUrl } from '@/lib/env'
@@ -18,6 +18,7 @@ import {
 import { generateRecoveryKey } from '@/lib/crypto/recovery-key'
 import { createClient } from '@/lib/supabase/client'
 import { updateKeyset } from '@/lib/vault/api'
+import { holdLockOnHide } from '@/lib/vault/auto-lock'
 import { setKeyset } from '@/lib/vault/store'
 import { buildEmergencyKit, downloadEmergencyKit } from '@/lib/vault/export'
 import { useVault } from '@/lib/vault/use-vault'
@@ -37,6 +38,14 @@ export function RecoverySection() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [created, setCreated] = useState<string | null>(null)
+
+  // While the new key is on screen the old one has already stopped working.
+  // A print or save dialog can momentarily hide the tab on some platforms, and
+  // an immediate lock here would throw the only copy away. Hold it off.
+  useEffect(() => {
+    if (!created) return
+    return holdLockOnHide()
+  }, [created])
 
   const site = siteUrl()
   const kitText = created

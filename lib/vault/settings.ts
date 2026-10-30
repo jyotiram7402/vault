@@ -17,6 +17,8 @@ export interface VaultSettings {
   privacyScreen: boolean
   /** Ask for the master password again before showing a secret on screen. */
   requireMasterToReveal: boolean
+  /** Lock the moment the tab is hidden, rather than after the idle timeout. */
+  lockOnHide: boolean
 }
 
 export const AUTO_LOCK_OPTIONS = [1, 5, 15, 30, 60] as const
@@ -27,6 +29,7 @@ export const DEFAULT_SETTINGS: VaultSettings = {
   clipboardSeconds: 30,
   privacyScreen: true,
   requireMasterToReveal: true,
+  lockOnHide: true,
 }
 
 function validate(value: unknown): VaultSettings {
@@ -36,9 +39,11 @@ function validate(value: unknown): VaultSettings {
   const clipboard = record.clipboardSeconds
   const privacy = record.privacyScreen
   const reprompt = record.requireMasterToReveal
+  const lockOnHide = record.lockOnHide
   return {
     requireMasterToReveal:
       typeof reprompt === 'boolean' ? reprompt : DEFAULT_SETTINGS.requireMasterToReveal,
+    lockOnHide: typeof lockOnHide === 'boolean' ? lockOnHide : DEFAULT_SETTINGS.lockOnHide,
     autoLockMinutes:
       typeof autoLock === 'number' && (AUTO_LOCK_OPTIONS as readonly number[]).includes(autoLock)
         ? autoLock
