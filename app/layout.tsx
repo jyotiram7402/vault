@@ -5,6 +5,7 @@ import './globals.css'
 import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE } from '@/lib/config'
 import { siteUrl } from '@/lib/env'
 import { THEME_COOKIE } from '@/lib/vault/theme'
+import { RecoveryRedirect } from '@/components/auth/recovery-redirect'
 import { RegisterSw } from '@/components/pwa/register-sw'
 import { ToastProvider } from '@/components/ui/toast'
 
@@ -77,6 +78,7 @@ export default async function RootLayout({
     >
       <body className="min-h-dvh bg-bg text-ink antialiased">
         <ToastProvider>{children}</ToastProvider>
+        <RecoveryRedirect />
         <RegisterSw />
       </body>
     </html>
