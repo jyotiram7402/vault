@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { SecurityStatus } from '@/components/settings/security-status'
 import { SecuritySection } from '@/components/settings/security-section'
 import { MasterPasswordSection } from '@/components/settings/master-password-section'
 import { RecoverySection } from '@/components/settings/recovery-section'
@@ -21,6 +22,7 @@ export default function VaultSettingsPage() {
       <h1 className="plate text-2xl text-ink">Settings</h1>
 
       <div className="mt-6 flex flex-col gap-5">
+        <SecurityStatus />
         <SecuritySection />
         <MasterPasswordSection />
         <RecoverySection />

@@ -133,6 +133,7 @@ export function TwoFactorSection() {
 
   return (
     <SettingsSection
+      id="two-factor"
       title="Two-factor sign-in"
       description="A code from an authenticator app, on top of your account password."
     >

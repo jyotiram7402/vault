@@ -182,8 +182,9 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
     if (state !== 'unlocked') return
     return startAutoLock({
       getTimeoutMs: () => readSettings().autoLockMinutes * 60_000,
-      onLock: () => {
-        lock('idle')
+      getLockOnHide: () => readSettings().lockOnHide,
+      onLock: (reason) => {
+        lock(reason)
         postSessionMessage({ type: 'lock' })
       },
     })

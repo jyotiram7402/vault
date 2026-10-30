@@ -1,9 +1,10 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ChevronDown, FileUp, TriangleAlert } from 'lucide-react'
 import { APP_NAME } from '@/lib/config'
 import { createClient } from '@/lib/supabase/client'
+import { holdLockOnHide } from '@/lib/vault/auto-lock'
 import { createItemsInBatches } from '@/lib/vault/items'
 import { getVaultKey, upsertItem } from '@/lib/vault/store'
 import { parseImportCsv, prepareBackupImport, previewRows, type ImportPreview } from '@/lib/vault/import'
@@ -60,6 +61,13 @@ export function ImportDialog({ open, onClose }: { open: boolean; onClose: () => 
 
   const fileRef = useRef<HTMLInputElement>(null)
   const backupFileRef = useRef<HTMLInputElement>(null)
+
+  // A native file picker can report the tab as hidden for a moment; locking
+  // in the middle of choosing a file would discard the whole import.
+  useEffect(() => {
+    if (!open) return
+    return holdLockOnHide()
+  }, [open])
 
   const reset = () => {
     setText('')

@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { FileDown, TriangleAlert } from 'lucide-react'
 import { nextTwoFrames } from '@/lib/utils'
 import { fromBase64 } from '@/lib/crypto/bytes'
 import { vaultKeyAad } from '@/lib/crypto/constants'
 import { WrongPasswordError, deriveMasterKek, unwrapVaultKey } from '@/lib/crypto/keys'
+import { holdLockOnHide } from '@/lib/vault/auto-lock'
 import { useVault } from '@/lib/vault/use-vault'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
@@ -36,6 +37,12 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
   const [error, setError] = useState<string | null>(null)
 
   const cardCount = items.filter((item) => item.data.type === 'card').length
+
+  // A "save as" dialog can hide the tab briefly; don't lock mid-export.
+  useEffect(() => {
+    if (!open) return
+    return holdLockOnHide()
+  }, [open])
 
   const reset = () => {
     setPassword('')

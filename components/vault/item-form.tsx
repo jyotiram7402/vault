@@ -190,12 +190,7 @@ export function ItemForm({
     if (isNew) return false
     const initial = initialState(item, startType, defaultTitle)
     return Boolean(
-      initial.url ||
-        initial.username ||
-        initial.totp ||
-        initial.tags ||
-        initial.favorite ||
-        initial.fields.length > 0,
+      initial.url || initial.totp || initial.tags || initial.favorite || initial.fields.length > 0,
     )
   })
 
@@ -433,6 +428,17 @@ export function ItemForm({
 
         {state.type === 'login' ? (
           <>
+            <Field id="form-username" label="Username or email" optional>
+              <Input
+                id="form-username"
+                value={state.username}
+                onChange={(event) => update('username', event.target.value)}
+                maxLength={LIMITS.username}
+                autoComplete="off"
+                secret
+              />
+            </Field>
+
             <div className="flex flex-col gap-2">
               <Field id="form-password" label="Password" required error={passwordError}>
                 <PasswordInput
@@ -621,17 +627,6 @@ export function ItemForm({
                     secret
                     invalid={Boolean(urlError)}
                     aria-describedby={describedBy('form-url', undefined, urlError)}
-                  />
-                </Field>
-
-                <Field id="form-username" label="Username or email" optional>
-                  <Input
-                    id="form-username"
-                    value={state.username}
-                    onChange={(event) => update('username', event.target.value)}
-                    maxLength={LIMITS.username}
-                    autoComplete="off"
-                    secret
                   />
                 </Field>
 

@@ -45,6 +45,9 @@ export function PasswordInput({
           inputClasses,
           'h-11 pr-12',
           revealed && mono && 'mono',
+          // A revealed password is a secret on screen: let the privacy screen
+          // blur it when the window loses focus, like every other secret.
+          revealed && 'secret',
           invalid && 'border-danger',
           className,
         )}

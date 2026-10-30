@@ -60,7 +60,16 @@ async function backupKey(
   usages: KeyUsage[],
 ): Promise<CryptoKey> {
   const material = await deriveKeyMaterial(password, salt, params)
-  return crypto.subtle.importKey('raw', material, { name: 'AES-GCM', length: 256 }, false, usages)
+  const key = await crypto.subtle.importKey(
+    'raw',
+    material,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    usages,
+  )
+  // Same hygiene as hkdfAesKey: the key holds its own copy now.
+  material.fill(0)
+  return key
 }
 
 export async function createBackup(
