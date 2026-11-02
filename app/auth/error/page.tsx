@@ -11,7 +11,14 @@ export default function AuthErrorPage() {
   return (
     <AuthCard title="That link didn’t work">
       <div className="flex flex-col gap-5">
-        <p className="text-ink-muted">It may have expired or already been used.</p>
+        <div className="flex flex-col gap-2 text-ink-muted">
+          <p>It may have expired, or something opened it before you did.</p>
+          <p>Confirming a new account? It has probably worked already, so try signing in.</p>
+          <p>
+            Resetting your password? Send a new email and type the code from it instead of pressing
+            the button. Only the newest email counts.
+          </p>
+        </div>
         <div className="flex flex-wrap gap-3">
           <Link
             href="/login"
