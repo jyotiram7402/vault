@@ -26,6 +26,11 @@ export function authErrorMessage(error: { message?: string; code?: string } | nu
   if (code === 'over_request_rate_limit' || code === 'over_email_send_rate_limit' || text.includes('rate limit')) {
     return { message: 'Too many attempts. Wait a minute and try again.' }
   }
+  if (code === 'otp_expired' || text.includes('expired or is invalid') || text.includes('invalid or has expired')) {
+    return {
+      message: 'That code has expired or was already used. Only the newest email counts. Send a new one.',
+    }
+  }
   if (code === 'weak_password' || text.includes('password should be at least')) {
     return { message: 'That password is too weak. Use at least 12 characters.' }
   }

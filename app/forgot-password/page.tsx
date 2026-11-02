@@ -13,7 +13,7 @@ export default function ForgotPasswordPage() {
   return (
     <AuthCard
       title="Reset your sign-in password"
-      subtitle="We’ll email you a link. This does not change your master password, which nobody can reset."
+      subtitle="We’ll email you a button to press and a code to type. This does not change your master password, which nobody can reset."
     >
       {isSupabaseConfigured ? <ForgotForm /> : <SetupNeeded />}
     </AuthCard>
