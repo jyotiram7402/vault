@@ -48,6 +48,7 @@ All of these are in your Supabase project.
 - Email provider: **enabled**
 - **Confirm email**: on
 - Minimum password length: **12**
+- Password Requirements: your choice. The app's strength meter judges guessability, not character types, so if you require letters, digits or symbols here, a password the meter calls excellent can still be refused. When that happens the app repeats Supabase's actual rule under the field.
 
 **Authentication → Multi-Factor**
 
