@@ -68,26 +68,36 @@ If you have set up SMTP (below), paste the three templates from the bottom of th
 
 **Authentication → Emails → SMTP**
 
-Supabase's built-in email sender is meant for testing and is heavily rate-limited — a handful of messages per hour. For real users, connect a free SMTP provider so confirmation emails actually arrive, and so you can edit the templates.
+Supabase's built-in email sender is for development only: about two emails an hour, and it cannot be raised. For sign-up and password-reset emails to arrive reliably — and to be able to edit the templates — connect your own sender. A Gmail account made just for this is free and takes about fifteen minutes.
 
-Resend's free tier works well:
+**Gmail, once:**
 
-1. Sign up at [resend.com](https://resend.com) and create an **API key**.
-2. Without your own domain, Resend only lets you send to the address you signed up with, from `onboarding@resend.dev`. That is enough for a private, single-user vault. To email anyone else, verify a domain you own under Resend → Domains.
-3. In Supabase → **Authentication → Emails → SMTP**, enable custom SMTP:
+1. Create a new Gmail account only for app emails, for example `yourname.apps@gmail.com`. Its name appears under the app name in every email, so keep it short and neutral. Don't use your personal or work inbox.
+2. **Google Account → Security** → turn on **2-Step Verification**. App passwords require it.
+3. Go to `myaccount.google.com/apppasswords` and create one named for this project, e.g. "Vault Supabase". Copy the 16-letter password — Google shows it once. Make a separate app password per project, so you can revoke one without breaking the others.
 
-   | Field | Value |
-   |---|---|
-   | Host | `smtp.resend.com` |
-   | Port | `465` |
-   | Username | `resend` |
-   | Password | your Resend API key (`re_…`) |
-   | Sender email | `onboarding@resend.dev`, or an address on your verified domain |
-   | Sender name | `Vault` |
+> Keep that app password out of code, `.env` files, chats and documents. Type it straight into Supabase.
 
-4. Save. The Templates screen becomes editable, and **Authentication → Rate Limits** lets you raise the email limit.
+**Supabase, per project — Authentication → Emails → SMTP → Enable custom SMTP:**
 
-For a quick private test you can skip SMTP entirely: turn **Confirm email** off, create your account, then turn it back on.
+| Field | Value |
+|---|---|
+| Sender email | your app Gmail address |
+| Sender name | `Vault` |
+| Host | `smtp.gmail.com` |
+| Port | `587` (if that fails, `465`) |
+| Username | the same Gmail address, in full |
+| Password | this project's 16-letter app password, no spaces |
+
+Save. Then:
+
+- **Authentication → Rate Limits** → set emails per hour to 30–100. (Locked until custom SMTP is on.)
+- **Authentication → Emails → Templates** is now editable: paste the templates from the bottom of this file. Every link in them opens a page in the app with a **Continue** button, so they work on any device, not only the browser that asked for the email, and a mail scanner that opens links can't use them up.
+- Turn **Confirm email** back on if you switched it off for a quick start.
+
+Gmail sends roughly 500 emails a day across every project using that account — plenty for a personal vault. If this ever grows or gets its own domain, switch to a service such as Resend: same screen, only host, port, username and password change.
+
+For a quick private test you can skip all of this: turn **Confirm email** off, create your account, then turn it back on. The app's reset links still work; they just arrive slowly and sometimes not at all.
 
 **For private use:** once you have created your own account, go back to **Sign In / Providers → Email** and turn off **Allow new users to sign up**. Nobody else can then create an account on your deployment.
 
@@ -215,6 +225,13 @@ Paste each of these into **Authentication → Emails → Templates** in Supabase
 ```html
 <h2>Confirm your new email</h2>
 <p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change&next=/vault/settings">Confirm new email</a></p>
+```
+
+**Magic link** — subject: `Your sign-in link`. The app never sends these itself, but the Supabase dashboard's "Send magic link" button does, and without this template that link would land in the wrong place.
+
+```html
+<h2>Your sign-in link</h2>
+<p><a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=magiclink&next=/vault">Sign in to Vault</a></p>
 ```
 
 ---
