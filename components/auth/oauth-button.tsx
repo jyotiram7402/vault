@@ -38,7 +38,7 @@ export function OAuthButton({ next }: { next: string }) {
         type="button"
         onClick={handleClick}
         disabled={busy}
-        className="inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-btn border border-line bg-surface font-medium text-ink transition-colors hover:bg-surface-2 disabled:opacity-60"
+        className="inline-flex h-11 w-full items-center justify-center gap-2.5 rounded-btn border border-line-strong bg-surface font-medium text-ink transition-colors hover:bg-surface-2 active:bg-line disabled:cursor-not-allowed disabled:opacity-60"
       >
         {busy ? (
           <LoaderCircle aria-hidden="true" className="size-4 anim-spin" />

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { authErrorMessage } from '@/lib/supabase/auth-errors'
+import { focusFirstInvalid } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -46,11 +47,13 @@ export function ForgotForm() {
   // not a link, so nothing can spend it first.
   const handleCode = async (event: React.FormEvent) => {
     event.preventDefault()
+    const form = event.currentTarget
     setCodeError(null)
 
     const token = code.replace(/\s/g, '')
     if (!CODE_PATTERN.test(token)) {
-      setCodeError('Enter the 6-digit code from the email.')
+      setCodeError('Enter the code from the email. It’s only digits.')
+      void focusFirstInvalid(form)
       return
     }
 
@@ -60,6 +63,7 @@ export function ForgotForm() {
     if (error) {
       setCodeError(authErrorMessage(error).message)
       setBusy(false)
+      void focusFirstInvalid(form)
       return
     }
 
@@ -73,7 +77,7 @@ export function ForgotForm() {
         <div className="flex flex-col gap-2">
           <p className="text-ink">
             If an account exists for that email, we’ve sent it a message with a button and a
-            6-digit code. Press the button, or type the code here.
+            code. Press the button, or type the code here.
           </p>
           <p className="text-sm text-ink-muted">
             Only the newest email counts. This changes your sign-in password only; your master

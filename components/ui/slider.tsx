@@ -43,7 +43,7 @@ export function Slider({
             const parsed = Number.parseInt(event.target.value, 10)
             if (Number.isFinite(parsed)) onChange(clamp(parsed, min, max))
           }}
-          className="h-9 w-20 rounded-field border border-line bg-surface px-2 text-center tabular text-ink"
+          className="h-9 w-20 rounded-field border border-line-strong bg-surface px-2 text-center tabular text-ink pointer-coarse:h-11"
         />
       </div>
       <input

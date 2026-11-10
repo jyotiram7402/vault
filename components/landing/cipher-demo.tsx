@@ -65,7 +65,7 @@ export function CipherDemo() {
         autoCorrect="off"
         translate="no"
         autoComplete="off"
-        className="mono mt-2 h-11 w-full rounded-field border border-line bg-bg px-3 text-ink"
+        className="mono mt-2 h-11 w-full rounded-field border border-line-strong bg-bg px-3 text-ink"
       />
 
       <div className="mt-5 rounded-field border border-line bg-bg p-4">

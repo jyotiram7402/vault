@@ -1,4 +1,3 @@
-import { forgetClipboard } from '@/lib/vault/clipboard'
 import { clearReprompt } from '@/lib/vault/reprompt'
 import type { KeysetRow, VaultItem } from '@/lib/vault/types'
 
@@ -104,7 +103,9 @@ export function lock(reason: LockReason = 'manual'): void {
   const wasUnlocked = snapshot.status === 'unlocked'
   vaultKey = null
   lastLockReason = reason
-  forgetClipboard()
+  // A clipboard wipe that is still owed deliberately outlives the lock: lock
+  // on hide fires the moment you switch away to paste, and cancelling the
+  // wipe then meant it never ran. See lib/vault/clipboard.ts.
   clearReprompt()
   if (wasUnlocked || snapshot !== LOCKED_SNAPSHOT) {
     setSnapshot(LOCKED_SNAPSHOT)

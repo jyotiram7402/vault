@@ -48,6 +48,9 @@ All of these are in your Supabase project.
 - Email provider: **enabled**
 - **Confirm email**: on
 - Minimum password length: **12**
+- **Email OTP Length**: **10**. Every reset email carries a one-time code that also works on its own; six digits can be guessed by someone with enough internet addresses before it expires, ten cannot.
+- **Email OTP Expiration**: **900** (fifteen minutes).
+- **Require current password when updating**: on. Changing the sign-in password then needs the current one, except straight after a reset email, so a signed-in browser alone can't take over the account. Supabase still counts a session opened from a reset email as a reset session, so forgotten-password resets keep working.
 - Password Requirements: your choice. The app's strength meter judges guessability, not character types, so if you require letters, digits or symbols here, a password the meter calls excellent can still be refused. When that happens the app repeats Supabase's actual rule under the field.
 
 **Authentication → Multi-Factor**
@@ -63,7 +66,7 @@ All of these are in your Supabase project.
 
 Supabase only lets you edit email templates once you are sending through your own SMTP server. Until then it shows "Set up custom SMTP to edit templates" and uses its generic defaults.
 
-**The app works either way.** Its sign-up and reset links go through `/auth/callback`, which handles the format Supabase's default templates produce. The custom templates at the bottom of this file are nicer wording — they say plainly that a password reset does *not* touch your master password — and the reset one adds a 6-digit code that the Forgot password page accepts when a mailbox's security scanner has already spent the link. Without the custom templates the app still works, but that code never arrives.
+**The app works either way.** Its sign-up and reset links go through `/auth/callback`, which handles the format Supabase's default templates produce. The custom templates at the bottom of this file are nicer wording — they say plainly that a password reset does *not* touch your master password — and the reset one adds a one-time code that the Forgot password page accepts when a mailbox's security scanner has already spent the link. Without the custom templates the app still works, but that code never arrives.
 
 If you have set up SMTP (below), paste the four templates from the bottom of this file.
 
@@ -93,14 +96,14 @@ Supabase's built-in email sender is for development only: about two emails an ho
 Save. Then:
 
 - **Authentication → Rate Limits** → set emails per hour to 30–100. (Locked until custom SMTP is on.)
-- **Authentication → Emails → Templates** is now editable: paste the templates from the bottom of this file. Every link in them opens a page in the app with a **Continue** button, so they work on any device, not only the browser that asked for the email, and a mail scanner that opens links can't use them up. The reset email also carries a 6-digit code to type into the app, for mailboxes whose scanner presses buttons as well.
+- **Authentication → Emails → Templates** is now editable: paste the templates from the bottom of this file. Every link in them opens a page in the app with a **Continue** button, so they work on any device, not only the browser that asked for the email, and a mail scanner that opens links can't use them up. The reset email also carries a one-time code to type into the app, for mailboxes whose scanner presses buttons as well.
 - Turn **Confirm email** back on if you switched it off for a quick start.
 
 Gmail sends roughly 500 emails a day across every project using that account — plenty for a personal vault. If this ever grows or gets its own domain, switch to a service such as Resend: same screen, only host, port, username and password change.
 
 For a quick private test you can skip all of this: turn **Confirm email** off, create your account, then turn it back on. The app's reset links still work; they just arrive slowly and sometimes not at all.
 
-**For private use:** once you have created your own account, go back to **Sign In / Providers → Email** and turn off **Allow new users to sign up**. Nobody else can then create an account on your deployment.
+**For private use:** as soon as your own account exists, go back to **Authentication → Sign In / Providers** and turn off **Allow new users to sign up**. While sign-ups are open, anyone can create an account on your deployment, use up your hourly email allowance so your own reset emails stop arriving, and fill your free database.
 
 ### D. Copy your keys
 
@@ -165,10 +168,10 @@ Optional: in Vercel **Settings → Functions**, choose the region closest to you
 | **The Vercel build failed** | Open the build log in Vercel, copy the error, and paste it into Claude Code asking for the smallest fix. Do not let it upgrade packages to "solve" a type error. |
 | **"Setup needed" page** | The environment variables are missing or misspelled. Check them in Vercel and redeploy — the app reads them at build time. |
 | **Confirmation emails never arrive** | Supabase's built-in sender is rate-limited. Set up SMTP (step C), check your spam folder, and wait a few minutes between attempts. |
-| **The reset email's button ends on "That link didn't work"** | Something used the link before you did: usually a company mailbox's security scanner, or a newer reset email replaced it. Send one new email, then type the 6-digit code from it on the Reset page instead of pressing the button. Only the newest email counts. |
+| **The reset email's button ends on "That link didn't work"** | Something used the link before you did: usually a company mailbox's security scanner, or a newer reset email replaced it. Send one new email, then type the code from it on the Reset page instead of pressing the button. Only the newest email counts. |
 | **"Can't reach the vault server"** | Free Supabase projects pause after about a week without activity. Open the Supabase dashboard and restore the project. |
 | **I forgot my master password** | On the unlock screen, choose **Use recovery key**, enter the key from your Emergency Kit, and set a new master password. |
-| **I lost both the master password and the Recovery Key** | The data cannot be recovered by anyone. On the unlock screen, open *Can't unlock at all?* → **Reset vault** to delete everything and start again. Your account survives. |
+| **I lost both the master password and the Recovery Key** | The data cannot be recovered by anyone. On the unlock screen, open *Can't unlock at all?* → **Reset vault** to delete everything and start again. It asks for your sign-in password first. Your account survives. |
 | **Sign-in works but the vault is empty on a second device** | Check that both devices are signed into the same account, and that two-factor was completed if you turned it on. |
 
 ---

@@ -45,7 +45,7 @@ export function Switch({
         className={cn(
           'relative mt-0.5 inline-flex h-7 w-12 shrink-0 items-center rounded-full border transition-colors duration-150',
           'disabled:cursor-not-allowed disabled:opacity-50',
-          checked ? 'border-transparent bg-primary' : 'border-line bg-surface-2',
+          checked ? 'border-transparent bg-primary' : 'border-line-strong bg-surface-2',
         )}
       >
         <span

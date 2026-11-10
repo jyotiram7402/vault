@@ -34,6 +34,13 @@ export async function SiteHeader() {
           >
             How it works
           </Link>
+          {/* From `md` up only: at `sm` the row has no room for a third link. */}
+          <Link
+            href="/security"
+            className="hidden rounded-btn px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:text-ink md:inline-flex"
+          >
+            Security
+          </Link>
           <Link
             href="/generator"
             className="hidden rounded-btn px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:text-ink sm:inline-flex"

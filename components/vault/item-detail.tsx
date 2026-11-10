@@ -106,7 +106,7 @@ function SecretRow({
       <IconButton
         label={revealed ? `Hide ${copyLabel.toLowerCase()}` : `Show ${copyLabel.toLowerCase()}`}
         onClick={() => setRevealed(!revealed)}
-        className="size-9"
+        size="sm"
       >
         {revealed ? (
           <EyeOff aria-hidden="true" className="size-4" />
@@ -147,7 +147,9 @@ export function ItemDetail({ item, onEdit, onDelete, onToggleFavorite }: ItemDet
       <header className="flex items-start gap-3 border-b border-line px-4 py-4 sm:px-5">
         <Monogram seed={host || payload.title} label={payload.title} size="lg" />
         <div className="min-w-0 flex-1">
-          <h1 className="plate-tight truncate text-xl text-ink">{payload.title}</h1>
+          {/* Wrapped, never cut off: this pane is the one place the whole
+              title, username and cardholder can be read. */}
+          <h1 className="plate-tight break-words text-xl text-ink">{payload.title}</h1>
           {link ? (
             <a
               href={link}
@@ -164,7 +166,7 @@ export function ItemDetail({ item, onEdit, onDelete, onToggleFavorite }: ItemDet
             </p>
           ) : payload.type === 'login' ? (
             // A login with no website used to fall through to "Secure note".
-            <p className="secret mt-0.5 truncate text-sm text-ink-muted">
+            <p className="secret mt-0.5 break-words text-sm text-ink-muted">
               {payload.username || 'Login'}
             </p>
           ) : (
@@ -199,7 +201,7 @@ export function ItemDetail({ item, onEdit, onDelete, onToggleFavorite }: ItemDet
                 type="button"
                 {...props}
                 aria-label="More actions"
-                className="inline-flex size-9 items-center justify-center rounded-btn text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink"
+                className="inline-flex size-9 items-center justify-center rounded-btn text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink active:bg-line pointer-coarse:size-11"
               >
                 <Ellipsis aria-hidden="true" className="size-5" />
               </button>
@@ -213,7 +215,7 @@ export function ItemDetail({ item, onEdit, onDelete, onToggleFavorite }: ItemDet
           <>
             {payload.username ? (
               <Row label="Username">
-                <span className="secret min-w-0 flex-1 truncate text-ink">{payload.username}</span>
+                <span className="secret min-w-0 flex-1 break-words text-ink">{payload.username}</span>
                 <CopyButton value={payload.username} label="Username" plain size="sm" />
               </Row>
             ) : null}
@@ -269,7 +271,7 @@ export function ItemDetail({ item, onEdit, onDelete, onToggleFavorite }: ItemDet
           <>
             {payload.cardholder ? (
               <Row label="Cardholder">
-                <span className="secret min-w-0 flex-1 truncate text-ink">
+                <span className="secret min-w-0 flex-1 break-words text-ink">
                   {payload.cardholder}
                 </span>
                 <CopyButton value={payload.cardholder} label="Cardholder" plain size="sm" />
@@ -301,7 +303,17 @@ export function ItemDetail({ item, onEdit, onDelete, onToggleFavorite }: ItemDet
           <div className="border-b border-line px-4 py-3 sm:px-5">
             <button
               type="button"
-              onClick={() => setShowNotes((value) => !value)}
+              onClick={() => {
+                if (showNotes) {
+                  setShowNotes(false)
+                  return
+                }
+                // Notes often hold secrets, so showing them asks the same way
+                // revealing a password does.
+                void requireReprompt().then((allowed) => {
+                  if (allowed) setShowNotes(true)
+                })
+              }}
               aria-expanded={showNotes}
               className="flex w-full items-center justify-between gap-3 text-left text-sm font-medium text-ink"
             >
@@ -360,7 +372,7 @@ function CardNumberRow({ number }: { number: string }) {
       <IconButton
         label={revealed ? 'Hide card number' : 'Show card number'}
         onClick={() => setRevealed(!revealed)}
-        className="size-9"
+        size="sm"
       >
         {revealed ? (
           <EyeOff aria-hidden="true" className="size-4" />
@@ -407,7 +419,7 @@ function HistoryEntry({ value, changedAt }: { value: string; changedAt: string }
       <IconButton
         label={revealed ? 'Hide previous password' : 'Show previous password'}
         onClick={() => setRevealed(!revealed)}
-        className="size-9"
+        size="sm"
       >
         {revealed ? (
           <EyeOff aria-hidden="true" className="size-4" />

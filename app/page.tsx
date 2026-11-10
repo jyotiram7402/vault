@@ -3,6 +3,7 @@ import { APP_DESCRIPTION } from '@/lib/config'
 import { SiteHeader } from '@/components/landing/site-header'
 import { SiteFooter } from '@/components/landing/site-footer'
 import { CipherDemo } from '@/components/landing/cipher-demo'
+import { TrustFacts } from '@/components/landing/trust-facts'
 import { SealSteps } from '@/components/landing/seal-steps'
 import { FeatureList } from '@/components/landing/feature-list'
 import { Faq } from '@/components/landing/faq'
@@ -36,7 +37,7 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/login"
-                  className="inline-flex h-12 items-center rounded-btn border border-line bg-surface px-5 font-semibold text-ink transition-colors hover:bg-surface-2"
+                  className="inline-flex h-12 items-center rounded-btn border border-line-strong bg-surface px-5 font-semibold text-ink transition-colors hover:bg-surface-2"
                 >
                   Sign in
                 </Link>
@@ -50,6 +51,7 @@ export default function HomePage() {
           </div>
         </section>
 
+        <TrustFacts />
         <SealSteps />
         <FeatureList />
         <Faq />

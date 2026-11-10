@@ -31,7 +31,7 @@ export function ItemRow({ item, query, selected, onSelect, onToggleFavorite }: I
   const favorite = item.data.favorite === true
 
   return (
-    <li className={cn('list-cv flex items-center gap-1 pr-2', selected && 'bg-surface-2')}>
+    <li className={cn('list-cv flex items-center gap-2 pr-2', selected && 'bg-surface-2')}>
       <button
         type="button"
         onClick={() => onSelect(item)}

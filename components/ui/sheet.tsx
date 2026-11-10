@@ -63,7 +63,7 @@ export function Sheet({ open, onClose, title, actions, guardClose = false, child
       <div
         className={cn('anim-sheet flex h-dvh flex-col bg-surface sm:border-l sm:border-line')}
       >
-        <div className="safe-top flex shrink-0 items-center gap-2 border-b border-line px-2 py-2">
+        <div className="flex shrink-0 items-center gap-2 border-b border-line px-2 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))]">
           <IconButton label="Back" onClick={onClose}>
             <ArrowLeft aria-hidden="true" className="size-5" />
           </IconButton>

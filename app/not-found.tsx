@@ -18,7 +18,7 @@ export default function NotFound() {
         </Link>
         <Link
           href="/vault"
-          className="inline-flex h-11 items-center rounded-btn border border-line bg-surface px-4 font-semibold text-ink transition-colors hover:bg-surface-2"
+          className="inline-flex h-11 items-center rounded-btn border border-line-strong bg-surface px-4 font-semibold text-ink transition-colors hover:bg-surface-2"
         >
           Open vault
         </Link>

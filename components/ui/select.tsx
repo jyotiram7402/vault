@@ -1,6 +1,6 @@
 import { ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { inputClasses } from '@/components/ui/input'
+import { inputBorder, inputClasses } from '@/components/ui/input'
 
 export interface SelectOption {
   value: string
@@ -16,7 +16,7 @@ export function Select({ options, placeholder, className, ...props }: SelectProp
   return (
     <div className="relative">
       <select
-        className={cn(inputClasses, 'h-11 appearance-none pr-10', className)}
+        className={cn(inputClasses, 'h-11 appearance-none pr-10', inputBorder(), className)}
         {...props}
       >
         {placeholder ? <option value="">{placeholder}</option> : null}

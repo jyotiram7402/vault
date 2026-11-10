@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, lazy, useCallback, useEffect, useMemo, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -15,6 +15,7 @@ import {
   type Filter,
   type SortMode,
 } from '@/lib/vault/search'
+import { requireReprompt } from '@/lib/vault/reprompt'
 import {
   getVaultKey,
   markSynced,
@@ -122,9 +123,36 @@ export function VaultView() {
     () => (selectedId ? (items.find((item) => item.id === selectedId) ?? null) : null),
     [items, selectedId],
   )
+  /**
+   * The edit form puts every secret of an item into its fields, so opening it
+   * for an existing item asks for the master password first. The check lives
+   * here rather than on the Edit button so it also covers every other way in:
+   * a Health link, a typed `?edit=1` address, the back button.
+   */
+  const [editAllowedFor, setEditAllowedFor] = useState<string | null>(null)
+  const editRequestFor = useRef<string | null>(null)
+  const hasSelected = selected !== null
+
+  useEffect(() => {
+    if (!editing) {
+      setEditAllowedFor(null)
+      return
+    }
+    if (!selectedId || !hasSelected) return
+    // Already allowed, or already asking: a second request would be refused.
+    if (editAllowedFor === selectedId || editRequestFor.current === selectedId) return
+    editRequestFor.current = selectedId
+    void requireReprompt().then((allowed) => {
+      editRequestFor.current = null
+      if (allowed) setEditAllowedFor(selectedId)
+      else setViewState({ edit: false, focusPassword: false }, { replace: true })
+    })
+  }, [editing, selectedId, hasSelected, editAllowedFor])
+
   // `choose` opens the type picker; a concrete type goes straight to a form.
   const creating = newType !== null
-  const formOpen = creating || (editing && selected !== null)
+  const formOpen =
+    creating || (editing && selected !== null && editAllowedFor === selected.id)
 
   // Adopt the address bar on mount, and whenever the user goes back or
   // forward. Everything in between is handled without touching the router.
@@ -347,8 +375,11 @@ export function VaultView() {
     />
   ) : null
 
+  // Keyed by id: a fresh instance per item, so nothing revealed on one item
+  // stays revealed when you move to the next.
   const detailNode = selected ? (
     <ItemDetail
+      key={selected.id}
       item={selected}
       onEdit={() => setViewState({ edit: true })}
       onDelete={() => setDeleteTarget(selected)}
@@ -374,7 +405,9 @@ export function VaultView() {
           onSortChange={setSort}
           items={items}
         />
-        <div className="flex-1 overflow-y-auto">
+        {/* The bottom padding lets the last row scroll clear of the floating
+            add button, which is on screen below the `lg` breakpoint. */}
+        <div className="flex-1 overflow-y-auto pb-24 lg:pb-0">
           <ItemList
             items={visible}
             totalCount={items.length}

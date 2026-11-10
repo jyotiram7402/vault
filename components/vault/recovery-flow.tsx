@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { ArrowLeft, KeyRound } from 'lucide-react'
-import { nextTwoFrames, sleep } from '@/lib/utils'
+import { focusFirstInvalid, nextTwoFrames, sleep } from '@/lib/utils'
 import { toBase64 } from '@/lib/crypto/bytes'
 import { KDF_DEFAULTS, recoveryVaultKeyAad, vaultKeyAad } from '@/lib/crypto/constants'
 import {
@@ -79,6 +79,7 @@ export function RecoveryFlow({
 
   const handleCheckKey = async (event: React.FormEvent) => {
     event.preventDefault()
+    const form = event.currentTarget
     setBusy(true)
     setError(null)
     setDial('working')
@@ -105,6 +106,7 @@ export function RecoveryFlow({
           ? cause.message
           : 'That recovery key didn’t work. Check for typos.',
       )
+      void focusFirstInvalid(form)
     } finally {
       setBusy(false)
     }
@@ -112,11 +114,13 @@ export function RecoveryFlow({
 
   const handleSetPassword = async (event: React.FormEvent) => {
     event.preventDefault()
+    const form = event.currentTarget
     if (!recoveredKey) return
 
     const problem = masterPasswordProblem(password, confirm, email)
     if (problem) {
       setError(problem)
+      void focusFirstInvalid(form)
       return
     }
 

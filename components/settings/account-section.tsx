@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { authErrorMessage } from '@/lib/supabase/auth-errors'
+import { verifySignInPassword } from '@/lib/supabase/verify-password'
+import { focusFirstInvalid } from '@/lib/utils'
 import { postSessionMessage } from '@/lib/vault/broadcast'
 import { lock } from '@/lib/vault/store'
 import { useVault } from '@/lib/vault/use-vault'
@@ -42,14 +44,17 @@ export function AccountSection() {
 
   const changePassword = async (event: React.FormEvent) => {
     event.preventDefault()
+    const form = event.currentTarget
     setError(null)
 
     if (next.length < MIN_PASSWORD_LENGTH) {
       setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`)
+      void focusFirstInvalid(form)
       return
     }
     if (next !== confirm) {
       setError('The two passwords don’t match.')
+      void focusFirstInvalid(form)
       return
     }
     if (!email) {
@@ -59,20 +64,27 @@ export function AccountSection() {
 
     setBusy(true)
     try {
-      const supabase = createClient()
-      // Prove they know the current password before changing it.
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password: current,
-      })
-      if (signInError) {
-        setError('That current password is wrong.')
+      // Prove they know the current password before changing it, on a
+      // throwaway client: signing in again here would replace this session,
+      // and with two-factor on, drop it to aal1 so the change is refused.
+      const check = await verifySignInPassword(email, current)
+      if (!check.ok) {
+        setError(check.wrongPassword ? 'That current password is wrong.' : check.message)
+        // The field to fix is the first one, not the one the message sits under.
+        if (check.wrongPassword) document.getElementById('acct-current')?.focus()
         return
       }
 
-      const { error: updateError } = await supabase.auth.updateUser({ password: next })
+      // current_password also lets Supabase check it itself when "Require
+      // current password when updating" is on. Passed as a variable so this
+      // compiles whether or not this version's types list the field;
+      // supabase-js sends every attribute it is given.
+      const attributes = { password: next, current_password: current }
+      const supabase = createClient()
+      const { error: updateError } = await supabase.auth.updateUser(attributes)
       if (updateError) {
         setError(authErrorMessage(updateError).message)
+        void focusFirstInvalid(form)
         return
       }
 

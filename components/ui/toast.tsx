@@ -83,12 +83,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {/* Lifted clear of the mobile tab bar, but only on the pages that have
           one — an 8-second Undo toast would otherwise cover it. The wrapper is
           pointer-events-none, so only a toast's own box ever blocks a click,
-          never this full-width strip. */}
+          never this full-width strip. The home-indicator inset is added
+          inside the bottom padding: a separate safe-area class on this
+          element would replace the padding instead of adding to it. */}
       <div
         aria-live="polite"
         aria-atomic="false"
         className={cn(
-          'safe-bottom pointer-events-none fixed inset-x-0 z-[100] flex flex-col items-center gap-2 p-4 sm:items-end',
+          'pointer-events-none fixed inset-x-0 z-[100] flex flex-col items-center gap-2 px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:items-end',
           hasBottomNav ? 'bottom-14 md:bottom-0' : 'bottom-0',
         )}
       >
@@ -114,7 +116,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   item.action?.onClick()
                   dismiss(item.id)
                 }}
-                className="shrink-0 text-sm font-semibold text-safe underline underline-offset-2 hover:no-underline"
+                className="shrink-0 text-sm font-semibold text-safe underline underline-offset-2 hover:no-underline pointer-coarse:-my-3 pointer-coarse:inline-flex pointer-coarse:min-h-11 pointer-coarse:items-center pointer-coarse:px-2"
               >
                 {item.action.label}
               </button>
@@ -123,7 +125,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               type="button"
               onClick={() => dismiss(item.id)}
               aria-label="Dismiss"
-              className="-my-1 -mr-1 shrink-0 rounded-field p-1 text-ink-muted hover:text-ink"
+              className="-my-1 -mr-1 inline-flex size-6 shrink-0 items-center justify-center rounded-field text-ink-muted hover:text-ink pointer-coarse:-my-2.5 pointer-coarse:-mr-2 pointer-coarse:size-11"
             >
               <X aria-hidden="true" className="size-4" />
             </button>

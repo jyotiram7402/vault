@@ -39,8 +39,10 @@ export function Field({
           {hint}
         </p>
       ) : null}
+      {/* role="alert" so a screen reader announces the error when it appears,
+          not only when the person happens to move onto the field. */}
       {error ? (
-        <p id={`${id}-error`} className="text-sm font-medium text-danger">
+        <p id={`${id}-error`} role="alert" className="text-sm font-medium text-danger">
           {error}
         </p>
       ) : null}

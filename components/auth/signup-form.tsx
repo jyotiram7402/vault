@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { authErrorMessage } from '@/lib/supabase/auth-errors'
 import { GOOGLE_AUTH_ENABLED } from '@/lib/env'
 import { estimateStrength } from '@/lib/password/strength'
+import { focusFirstInvalid } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -38,14 +39,17 @@ export function SignupForm() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    const form = event.currentTarget
     setError(null)
 
     if (password.length < MIN_PASSWORD_LENGTH) {
       setError(`Use at least ${MIN_PASSWORD_LENGTH} characters.`)
+      void focusFirstInvalid(form)
       return
     }
     if (password !== confirm) {
       setError('The two passwords don’t match.')
+      void focusFirstInvalid(form)
       return
     }
 
@@ -70,6 +74,7 @@ export function SignupForm() {
     if (signUpError) {
       setError(authErrorMessage(signUpError).message)
       setBusy(false)
+      void focusFirstInvalid(form)
       return
     }
 

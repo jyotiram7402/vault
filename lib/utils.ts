@@ -21,6 +21,19 @@ export function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/**
+ * After a failed submit, put focus on the first field marked invalid, so the
+ * error beside it is the next thing a keyboard or screen-reader user meets.
+ *
+ * Waits two frames first: the error has to render, and a field inside a
+ * <details> that has only just been opened has to become focusable.
+ */
+export async function focusFirstInvalid(root: ParentNode | null): Promise<void> {
+  if (!root) return
+  await nextTwoFrames()
+  root.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()
+}
+
 /** Lowercase, accent-free text for searching and comparing. */
 export function foldText(value: string): string {
   return value
