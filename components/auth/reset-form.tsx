@@ -66,9 +66,15 @@ export function ResetForm() {
         if (aalError || !aal) throw aalError ?? new Error('No assurance level')
 
         const now = Date.now() / 1000
-        const fromEmail = aal.currentAuthenticationMethods.some(
-          (entry) => EMAIL_METHODS.has(entry.method) && now - entry.timestamp < EMAIL_WINDOW_SECONDS,
-        )
+        const fromEmail = aal.currentAuthenticationMethods.some((entry) => {
+          // supabase-js types this list as objects OR bare names. Supabase
+          // itself sends objects; bare names only appear when a project
+          // rewrites the claim in a custom access-token hook. A bare name has
+          // no timestamp, so the freshness window can't apply to it, but the
+          // method alone still shows the session came from an email step.
+          if (typeof entry === 'string') return EMAIL_METHODS.has(entry)
+          return EMAIL_METHODS.has(entry.method) && now - entry.timestamp < EMAIL_WINDOW_SECONDS
+        })
 
         if (!active) return
         if (!fromEmail) setSessionState('not-from-email')
