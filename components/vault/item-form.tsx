@@ -2,7 +2,7 @@
 
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, CreditCard, Dices, KeyRound, Plus, StickyNote, Trash2 } from 'lucide-react'
-import { cardBrand, cn, groupCardNumber, luhnValid } from '@/lib/utils'
+import { cardBrand, cn, focusFirstInvalid, groupCardNumber, luhnValid } from '@/lib/utils'
 import { hostOf, normalizeWebsite } from '@/lib/security/url'
 import { estimateStrength } from '@/lib/password/strength'
 import { generateTotp, parseTotpInput } from '@/lib/totp'
@@ -353,20 +353,23 @@ export function ItemForm({
     return login
   }
 
-  const submit = async () => {
+  const submit = async (form: ParentNode) => {
     const payload = await build()
     if (payload) onSave(payload)
+    // Nothing was saved: take the person to the field that needs fixing, which
+    // may be inside "More options" and have only just been opened.
+    else void focusFirstInvalid(form)
   }
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault()
-    void submit()
+    void submit(event.currentTarget)
   }
 
   const handleKeyDown = (event: React.KeyboardEvent) => {
     if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
       event.preventDefault()
-      void submit()
+      void submit(event.currentTarget)
     }
   }
 
@@ -386,7 +389,7 @@ export function ItemForm({
                   initialRef.current = JSON.stringify({ ...state, type: option.type })
                   setTypeChosen(true)
                 }}
-                className="flex w-full items-center gap-3 rounded-panel border border-line bg-surface p-4 text-left transition-colors hover:bg-surface-2"
+                className="flex w-full items-center gap-3 rounded-panel border border-line-strong bg-surface p-4 text-left transition-colors hover:bg-surface-2 active:bg-line"
               >
                 <option.icon aria-hidden="true" className="size-5 shrink-0 text-safe" />
                 <span className="min-w-0">
@@ -718,7 +721,7 @@ export function ItemForm({
                     />
                   </label>
                   <div className="flex items-center gap-1">
-                    <label className="flex items-center gap-1.5 text-sm text-ink-muted">
+                    <label className="flex min-h-9 items-center gap-1.5 text-sm text-ink-muted pointer-coarse:min-h-11">
                       <input
                         type="checkbox"
                         checked={field.hidden}
@@ -777,9 +780,11 @@ export function ItemForm({
         ) : null}
       </div>
 
+      {/* The home-indicator inset is added inside the bottom padding. A
+          separate safe-area class here would replace `py-3`, not add to it. */}
       <div
         className={cn(
-          'safe-bottom sticky bottom-0 flex items-center justify-end gap-2 border-t border-line bg-surface px-4 py-3 sm:px-5',
+          'sticky bottom-0 flex items-center justify-end gap-2 border-t border-line bg-surface px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] sm:px-5',
         )}
       >
         <Button onClick={onCancel} disabled={saving}>

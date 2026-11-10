@@ -111,8 +111,9 @@ export function CopyButton({
         title={`Copy ${label.toLowerCase()}`}
         aria-label={`Copy ${label.toLowerCase()}`}
         className={cn(
-          'relative inline-flex shrink-0 items-center justify-center rounded-btn text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink',
-          size === 'sm' ? 'size-9' : 'size-11',
+          'relative inline-flex shrink-0 items-center justify-center rounded-btn text-ink-muted transition-colors hover:bg-surface-2 hover:text-ink active:bg-line',
+          // 36px in a dense desktop row, 44px on a touch screen.
+          size === 'sm' ? 'size-9 pointer-coarse:size-11' : 'size-11',
           className,
         )}
       >

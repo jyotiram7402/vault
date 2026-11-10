@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { Download, Printer, WandSparkles } from 'lucide-react'
 import { APP_NAME } from '@/lib/config'
 import { siteUrl } from '@/lib/env'
-import { cn, nextTwoFrames, sleep } from '@/lib/utils'
+import { cn, focusFirstInvalid, nextTwoFrames, sleep } from '@/lib/utils'
 import { KDF_DEFAULTS, recoveryVaultKeyAad, vaultKeyAad } from '@/lib/crypto/constants'
 import { toBase64 } from '@/lib/crypto/bytes'
 import {
@@ -111,9 +111,11 @@ export function SetupWizard({ userId, email, onReady }: SetupWizardProps) {
 
   const handleCreateKeys = async (event: React.FormEvent) => {
     event.preventDefault()
+    const form = event.currentTarget
     const problem = masterPasswordProblem(password, confirm, email)
     if (problem) {
       setError(problem)
+      void focusFirstInvalid(form)
       return
     }
     if (!acknowledged) {
@@ -170,6 +172,7 @@ export function SetupWizard({ userId, email, onReady }: SetupWizardProps) {
     if (!prepared) return
     if (recoveryKeyTail(tail) !== recoveryKeyTail(prepared.recoveryKeyText)) {
       setError('Those four characters don’t match. Check the key above.')
+      document.getElementById('setup-tail')?.focus()
       return
     }
 

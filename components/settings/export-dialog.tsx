@@ -24,6 +24,14 @@ const TABS = [
 
 const MIN_BACKUP_PASSWORD = 12
 
+/**
+ * Both kinds of export ask for the master password first.
+ *
+ * The encrypted backup needs it just as much as the plain CSV: whoever types
+ * the backup password can open the file anywhere, so without this check
+ * anyone at an unlocked vault could carry every item away, cards included,
+ * without ever seeing the master-password prompt.
+ */
 export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { toast } = useToast()
   const { items, userId, keyset } = useVault()
@@ -57,20 +65,49 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
     onClose()
   }
 
+  /** The same check the unlock screen makes. The key it produces is thrown away. */
+  const checkMasterPassword = async () => {
+    if (!userId || !keyset) throw new Error('Your vault isn’t open. Unlock it and try again.')
+    const kek = await deriveMasterKek(masterPassword, fromBase64(keyset.kdf_salt), {
+      memoryKiB: keyset.kdf_memory_kib,
+      iterations: keyset.kdf_iterations,
+      parallelism: keyset.kdf_parallelism,
+    })
+    await unwrapVaultKey(
+      keyset.wrapped_key,
+      keyset.wrapped_key_iv,
+      kek,
+      vaultKeyAad(userId),
+      false,
+    )
+  }
+
+  const describe = (cause: unknown, fallback: string): string =>
+    cause instanceof WrongPasswordError
+      ? 'That master password is wrong.'
+      : cause instanceof Error
+        ? cause.message
+        : fallback
+
   const exportEncrypted = async () => {
     setError(null)
+    if (!masterPassword) {
+      setError('Enter your master password.')
+      return
+    }
     if (password.length < MIN_BACKUP_PASSWORD) {
-      setError(`Use at least ${MIN_BACKUP_PASSWORD} characters.`)
+      setError(`Use at least ${MIN_BACKUP_PASSWORD} characters for the backup password.`)
       return
     }
     if (password !== confirm) {
-      setError('The two passwords don’t match.')
+      setError('The two backup passwords don’t match.')
       return
     }
 
     setBusy(true)
     await nextTwoFrames()
     try {
+      await checkMasterPassword()
       const { downloadEncryptedBackup } = await import('@/lib/vault/export')
       await downloadEncryptedBackup(
         items.map((item) => item.data),
@@ -80,7 +117,7 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
       toast({ message: 'Encrypted backup downloaded', tone: 'success' })
       onClose()
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Couldn’t create the backup.')
+      setError(describe(cause, 'Couldn’t create the backup.'))
     } finally {
       setBusy(false)
     }
@@ -88,42 +125,27 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
 
   const exportCsv = async () => {
     setError(null)
+    if (!masterPassword) {
+      setError('Enter your master password.')
+      return
+    }
     if (!acknowledged) {
       setError('Tick the box to confirm you understand this file is not encrypted.')
       return
     }
-    if (!userId || !keyset) return
 
     setBusy(true)
     await nextTwoFrames()
     try {
       // Re-check the master password before writing plaintext to disk.
-      const kek = await deriveMasterKek(masterPassword, fromBase64(keyset.kdf_salt), {
-        memoryKiB: keyset.kdf_memory_kib,
-        iterations: keyset.kdf_iterations,
-        parallelism: keyset.kdf_parallelism,
-      })
-      await unwrapVaultKey(
-        keyset.wrapped_key,
-        keyset.wrapped_key_iv,
-        kek,
-        vaultKeyAad(userId),
-        false,
-      )
-
+      await checkMasterPassword()
       const { downloadPlainCsv } = await import('@/lib/vault/export')
       downloadPlainCsv(items)
       reset()
       toast({ message: 'CSV downloaded. Delete it when you’re done.', tone: 'success' })
       onClose()
     } catch (cause) {
-      setError(
-        cause instanceof WrongPasswordError
-          ? 'That master password is wrong.'
-          : cause instanceof Error
-            ? cause.message
-            : 'Couldn’t create the CSV.',
-      )
+      setError(describe(cause, 'Couldn’t create the CSV.'))
     } finally {
       setBusy(false)
     }
@@ -168,24 +190,30 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
               A single file, sealed with a password of its own so it still opens after you change
               your master password. This is the recommended backup.
             </p>
-            <Field id="export-password" label="Backup password">
+            <Field id="export-backup-master" label="Your master password">
+              <PasswordInput
+                id="export-backup-master"
+                value={masterPassword}
+                onChange={(event) => setMasterPassword(event.target.value)}
+                autoComplete="off"
+                autoFocus
+              />
+            </Field>
+            <Field id="export-password" label="New backup password">
               <PasswordInput
                 id="export-password"
                 value={password}
                 onChange={(event) => setPassword(event.target.value)}
                 autoComplete="new-password"
                 minLength={MIN_BACKUP_PASSWORD}
-                autoFocus
               />
             </Field>
-            <Field id="export-confirm" label="Confirm backup password" error={error}>
+            <Field id="export-confirm" label="Confirm backup password">
               <PasswordInput
                 id="export-confirm"
                 value={confirm}
                 onChange={(event) => setConfirm(event.target.value)}
                 autoComplete="new-password"
-                invalid={Boolean(error)}
-                aria-describedby={error ? 'export-confirm-error' : undefined}
               />
             </Field>
           </>
@@ -223,10 +251,14 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
               />
               <span className="text-sm text-ink">I understand this file is not encrypted.</span>
             </label>
-
-            {error ? <p className="text-sm font-medium text-danger">{error}</p> : null}
           </>
         )}
+
+        {error ? (
+          <p role="alert" className="text-sm font-medium text-danger">
+            {error}
+          </p>
+        ) : null}
       </div>
     </Dialog>
   )

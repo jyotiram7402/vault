@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronDown, Fingerprint, KeyRound } from 'lucide-react'
 import { APP_NAME } from '@/lib/config'
-import { nextTwoFrames, sleep } from '@/lib/utils'
+import { focusFirstInvalid, nextTwoFrames, sleep } from '@/lib/utils'
 import { fromBase64 } from '@/lib/crypto/bytes'
 import { vaultKeyAad } from '@/lib/crypto/constants'
 import { assertKdfParamsAllowed } from '@/lib/crypto/kdf'
@@ -104,6 +104,7 @@ export function UnlockScreen({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    const form = event.currentTarget
     if (unlockWaitSeconds() > 0) return
 
     setBusy(true)
@@ -147,6 +148,7 @@ export function UnlockScreen({
         )
       }
       setBusy(false)
+      void focusFirstInvalid(form)
     }
   }
 
@@ -279,6 +281,7 @@ export function UnlockScreen({
       <ResetVaultDialog
         open={resetOpen}
         userId={userId}
+        email={email}
         onClose={() => setResetOpen(false)}
         onReset={onVaultReset}
       />

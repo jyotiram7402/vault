@@ -3,7 +3,7 @@
 import { useId, useState } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { inputClasses } from '@/components/ui/input'
+import { inputBorder, inputClasses } from '@/components/ui/input'
 
 export interface PasswordInputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'type'> {
@@ -48,7 +48,7 @@ export function PasswordInput({
           // A revealed password is a secret on screen: let the privacy screen
           // blur it when the window loses focus, like every other secret.
           revealed && 'secret',
-          invalid && 'border-danger',
+          inputBorder(invalid),
           className,
         )}
         {...props}
@@ -59,7 +59,7 @@ export function PasswordInput({
         onClick={() => setRevealed((value) => !value)}
         aria-label={revealed ? 'Hide password' : 'Show password'}
         title={revealed ? 'Hide password' : 'Show password'}
-        className="absolute top-0 right-0 inline-flex size-11 items-center justify-center rounded-field text-ink-muted transition-colors hover:text-ink"
+        className="absolute top-0 right-0 inline-flex size-11 items-center justify-center rounded-field text-ink-muted transition-colors hover:text-ink active:text-ink"
       >
         {revealed ? (
           <EyeOff aria-hidden="true" className="size-5" />

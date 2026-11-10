@@ -27,9 +27,12 @@ import {
 import { usedCategories, usedTags } from '@/lib/vault/search'
 
 /**
- * The desktop navigation rail: 232 px wide, collapsing to a 72 px icon rail on
+ * The desktop navigation rail: 232 px wide, narrowing to an 88 px rail on
  * tablets. Filters live here, in the URL, so the browser's back button behaves
  * the way people expect.
+ *
+ * On the narrow rail every item keeps its label, stacked under the icon: an
+ * icon on its own asks people to guess, and a tooltip never shows on touch.
  */
 
 const FILTERS = [
@@ -46,8 +49,13 @@ const PAGES = [
   { href: '/vault/settings', label: 'Settings', icon: Settings },
 ] as const
 
+// Icon over label on the tablet rail, icon beside label from `lg` up.
 const itemClasses =
-  'flex h-11 items-center gap-3 rounded-btn px-3 text-sm font-medium transition-colors'
+  'flex h-14 flex-col items-center justify-center gap-0.5 rounded-btn px-0.5 text-xs font-medium transition-colors ' +
+  'lg:h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-sm'
+
+const ACTIVE = 'bg-surface-2 text-ink'
+const IDLE = 'text-ink-muted hover:bg-surface-2 hover:text-ink active:bg-line'
 
 export function NavRail({
   onLock,
@@ -83,9 +91,12 @@ export function NavRail({
   return (
     <nav
       aria-label="Vault"
-      className="safe-top sticky top-0 hidden h-dvh w-[72px] shrink-0 flex-col gap-1 overflow-y-auto border-r border-line bg-surface px-2 py-3 md:flex lg:w-[232px] lg:px-3"
+      className="sticky top-0 hidden h-dvh w-22 shrink-0 flex-col gap-1 overflow-y-auto border-r border-line bg-surface px-1.5 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] md:flex lg:w-[232px] lg:px-3"
     >
-      <Link href="/vault" className="mb-3 flex h-11 items-center rounded-btn px-1.5 lg:px-2">
+      <Link
+        href="/vault"
+        className="mb-3 flex h-11 items-center justify-center rounded-btn px-1.5 lg:justify-start lg:px-2"
+      >
         <Logo markOnly className="lg:hidden" />
         <span className="hidden lg:inline">
           <Logo />
@@ -100,17 +111,11 @@ export function NavRail({
               <button
                 type="button"
                 onClick={() => chooseFilter(filter.key)}
-                title={filter.label}
                 aria-pressed={active}
-                className={cn(
-                  itemClasses,
-                  'w-full justify-center lg:justify-start',
-                  active ? 'bg-surface-2 text-ink' : 'text-ink-muted hover:bg-surface-2 hover:text-ink',
-                )}
+                className={cn(itemClasses, 'w-full', active ? ACTIVE : IDLE)}
               >
                 <filter.icon aria-hidden="true" className="size-5 shrink-0" />
-                <span className="hidden lg:inline">{filter.label}</span>
-                <span className="sr-only lg:hidden">{filter.label}</span>
+                <span className="max-w-full truncate">{filter.label}</span>
               </button>
             </li>
           )
@@ -132,11 +137,7 @@ export function NavRail({
                     type="button"
                     onClick={() => chooseFilter(key)}
                     aria-pressed={active}
-                    className={cn(
-                      itemClasses,
-                      'w-full',
-                      active ? 'bg-surface-2 text-ink' : 'text-ink-muted hover:bg-surface-2 hover:text-ink',
-                    )}
+                    className={cn(itemClasses, 'w-full', active ? ACTIVE : IDLE)}
                   >
                     <span aria-hidden="true" className="size-1.5 shrink-0 rounded-full bg-safe" />
                     {CATEGORY_LABELS[id]}
@@ -161,14 +162,10 @@ export function NavRail({
                     type="button"
                     onClick={() => chooseFilter(key)}
                     aria-pressed={active}
-                    className={cn(
-                      itemClasses,
-                      'w-full truncate',
-                      active ? 'bg-surface-2 text-ink' : 'text-ink-muted hover:bg-surface-2 hover:text-ink',
-                    )}
+                    className={cn(itemClasses, 'w-full', active ? ACTIVE : IDLE)}
                   >
                     <Tag aria-hidden="true" className="size-4 shrink-0" />
-                    <span className="truncate">{tag}</span>
+                    <span className="min-w-0 truncate">{tag}</span>
                   </button>
                 </li>
               )
@@ -184,17 +181,11 @@ export function NavRail({
             <li key={page.href}>
               <Link
                 href={page.href}
-                title={page.label}
                 aria-current={active ? 'page' : undefined}
-                className={cn(
-                  itemClasses,
-                  'justify-center lg:justify-start',
-                  active ? 'bg-surface-2 text-ink' : 'text-ink-muted hover:bg-surface-2 hover:text-ink',
-                )}
+                className={cn(itemClasses, active ? ACTIVE : IDLE)}
               >
                 <page.icon aria-hidden="true" className="size-5 shrink-0" />
-                <span className="hidden lg:inline">{page.label}</span>
-                <span className="sr-only lg:hidden">{page.label}</span>
+                <span className="max-w-full truncate">{page.label}</span>
               </Link>
             </li>
           )
@@ -206,14 +197,10 @@ export function NavRail({
             type="button"
             onClick={onOpenPalette}
             title="Search and actions"
-            className={cn(
-              itemClasses,
-              'w-full justify-center text-ink-muted hover:bg-surface-2 hover:text-ink lg:justify-start',
-            )}
+            className={cn(itemClasses, 'w-full', IDLE)}
           >
             <Command aria-hidden="true" className="size-5 shrink-0" />
-            <span className="hidden lg:inline">Search</span>
-            <span className="sr-only lg:hidden">Search and actions</span>
+            <span className="max-w-full truncate">Search</span>
           </button>
         </li>
         <li>
@@ -221,14 +208,10 @@ export function NavRail({
             type="button"
             onClick={onLock}
             title="Lock vault"
-            className={cn(
-              itemClasses,
-              'w-full justify-center text-ink-muted hover:bg-surface-2 hover:text-ink lg:justify-start',
-            )}
+            className={cn(itemClasses, 'w-full', IDLE)}
           >
             <Lock aria-hidden="true" className="size-5 shrink-0" />
-            <span className="hidden lg:inline">Lock</span>
-            <span className="sr-only lg:hidden">Lock vault</span>
+            <span className="max-w-full truncate">Lock</span>
           </button>
         </li>
       </ul>

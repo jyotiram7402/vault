@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import {
   Dices,
   Download,
@@ -67,6 +68,15 @@ export function FeatureList() {
           </li>
         ))}
       </ul>
+
+      {/* Someone who has read this far has decided: don't make them scroll
+          back to the top, or on past the questions, to act on it. */}
+      <Link
+        href="/signup"
+        className="mt-10 inline-flex h-12 items-center rounded-btn bg-primary px-5 font-semibold text-on-primary transition-[filter] hover:brightness-110"
+      >
+        Create your vault
+      </Link>
     </section>
   )
 }

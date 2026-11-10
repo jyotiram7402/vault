@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { nextTwoFrames } from '@/lib/utils'
+import { focusFirstInvalid, nextTwoFrames } from '@/lib/utils'
 import { fromBase64, toBase64 } from '@/lib/crypto/bytes'
 import { KDF_DEFAULTS, vaultKeyAad } from '@/lib/crypto/constants'
 import {
@@ -59,15 +59,18 @@ export function MasterPasswordSection() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    const form = event.currentTarget
     if (!userId || !keyset) return
 
     const problem = masterPasswordProblem(next, confirm, email)
     if (problem) {
       setError(problem)
+      void focusFirstInvalid(form)
       return
     }
     if (next === current) {
       setError('That is already your master password.')
+      void focusFirstInvalid(form)
       return
     }
 
@@ -118,6 +121,8 @@ export function MasterPasswordSection() {
             ? cause.message
             : 'Couldn’t change your master password. Nothing was changed.',
       )
+      // The field to fix is the first one, not the one the message sits under.
+      if (cause instanceof WrongPasswordError) document.getElementById('mp-current')?.focus()
     } finally {
       setBusy(false)
     }

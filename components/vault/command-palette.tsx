@@ -222,7 +222,7 @@ export function CommandPalette({
           autoCapitalize="off"
           autoCorrect="off"
           translate="no"
-          className="h-14 w-full border-b border-line bg-transparent px-4 text-base text-ink outline-none placeholder:text-ink-muted"
+          className="h-14 w-full border-b border-line bg-transparent px-4 text-base text-ink -outline-offset-2 placeholder:text-ink-muted"
         />
 
         <ul role="listbox" aria-label="Results" className="max-h-[50dvh] overflow-y-auto py-1">

@@ -3,7 +3,15 @@
 /* ==========================================================================
    Tijori design tokens — a modern steel tijori.
    Painted-steel greens, enamel off-white, brass hardware.
-   Every colour pair below meets WCAG AA. Keep it that way.
+
+   Measured, not assumed. In both themes:
+   - every text colour (ink, ink-muted, safe, danger, ok, warn) reaches 4.5:1
+     on --bg, --surface and --surface-2;
+   - --brass and --line-strong reach 3:1 on all three, which is what icons,
+     focus rings and the outlines of form controls need.
+   --brass is for icons, rings and large numerals, never body text.
+   --line is for dividers and card edges only, never the outline of a control.
+   Re-measure before changing any value.
    ========================================================================== */
 
 :root {
@@ -13,11 +21,12 @@
   --ink: #17201c;
   --ink-muted: #55625a;
   --line: #c3ccc1;
+  --line-strong: #75827a;
   --safe: #2e4a3f;
-  --brass: #a8771f;
+  --brass: #9d6f1c;
   --danger: #b13a2b;
-  --ok: #2c7656;
-  --warn: #8a5e00;
+  --ok: #256a4c;
+  --warn: #7e5600;
 
   /* Primary button: safe green in light mode, brass in dark mode. */
   --primary: var(--safe);
@@ -35,6 +44,7 @@
   --ink: #e5eae4;
   --ink-muted: #97a49c;
   --line: #2b3732;
+  --line-strong: #6d7c74;
   --safe: #79a893;
   --brass: #d6a54e;
   --danger: #e7705b;
@@ -57,6 +67,7 @@
     --ink: #e5eae4;
     --ink-muted: #97a49c;
     --line: #2b3732;
+    --line-strong: #6d7c74;
     --safe: #79a893;
     --brass: #d6a54e;
     --danger: #e7705b;
@@ -79,6 +90,7 @@
   --color-ink: var(--ink);
   --color-ink-muted: var(--ink-muted);
   --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
   --color-safe: var(--safe);
   --color-brass: var(--brass);
   --color-danger: var(--danger);
@@ -114,36 +126,144 @@
 
 /* ==========================================================================
    Base
+
+   THESE RULES MUST STAY INSIDE `@layer base`.
+
+   Tailwind's utilities live in a later cascade layer, and CSS written outside
+   any layer outranks every layer, whatever its specificity. When these rules
+   sat outside it, `button { color: inherit }` silently beat `text-on-primary`
+   on every button (a 1.7:1 label on the main action), `* { border-color }`
+   beat every `border-danger`, and `dialog { max-width }` beat `max-w-xl`.
+   Nothing warned about it; the classes were simply ignored.
    ========================================================================== */
 
-* {
-  border-color: var(--line);
+@layer base {
+  /* The default border colour. `border-*` utilities override it. */
+  *,
+  ::before,
+  ::after,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+    font-size: 1rem;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* The heading line-height is set further down, outside the layer. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-stretch: 118%;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+  }
+
+  /* No border-radius here: it used to square off whatever had focus. */
+  :focus-visible {
+    outline: 2px solid var(--brass);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: var(--surface-2);
+    color: var(--ink);
+  }
+
+  /* Tailwind v4 leaves buttons with the arrow cursor. Anything you can press
+     gets the hand; `disabled:cursor-not-allowed` still wins where it is set. */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  summary,
+  select,
+  input[type="checkbox"],
+  input[type="radio"] {
+    cursor: pointer;
+  }
+
+  /* No double-tap-to-zoom delay on anything tappable. Not the range input:
+     its thumb has to keep the browser's own drag handling. */
+  a,
+  button,
+  summary,
+  select,
+  textarea,
+  input:not([type="range"]),
+  [role="button"] {
+    touch-action: manipulation;
+  }
+
+  input[type="search"]::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  dialog {
+    padding: 0;
+    border: 0;
+    color: var(--ink);
+    background: transparent;
+    max-width: 100vw;
+    max-height: 100dvh;
+  }
+
+  dialog::backdrop {
+    background: var(--overlay-scrim);
+    backdrop-filter: blur(2px);
+  }
 }
 
-html {
-  -webkit-text-size-adjust: 100%;
-  text-size-adjust: 100%;
+/* --------------------------------------------------------------------------
+   Deliberately OUTSIDE the layer: these three must beat every utility.
+   -------------------------------------------------------------------------- */
+
+/* iOS zooms in on inputs under 16px, so no `text-sm` may shrink one on a phone. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 1rem;
+  }
 }
 
-body {
-  background-color: var(--bg);
-  color: var(--ink);
-  font-family: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  font-size: 1rem;
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
-}
-
+/* Size utilities carry a line-height of their own: 1.33 with `text-2xl`, and
+   1.0 with the hero's `text-6xl`, which lets its lines touch. Headings keep
+   one rhythm whatever their size. */
 h1,
 h2,
 h3,
 h4 {
-  font-stretch: 118%;
-  font-weight: 650;
-  letter-spacing: -0.01em;
   line-height: 1.15;
 }
+
+/* A display utility on a <dialog> must never show one that is closed. */
+dialog:not([open]) {
+  display: none;
+}
+
+/* ==========================================================================
+   Helpers
+
+   Plain classes, outside the layers on purpose, so they also outrank
+   utilities. That is what you want from `.mono` or `.plate`, and it is a trap
+   for the two safe-area helpers: on the same element they cancel `py-*` and
+   `p-*`. Use them only where no padding utility sets that side. Where one
+   does, put the inset inside it instead:
+   `pb-[calc(0.75rem+env(safe-area-inset-bottom))]`.
+   ========================================================================== */
 
 /* Engraved maker's-plate headings. */
 .plate {
@@ -171,39 +291,6 @@ h4 {
   font-family: var(--font-mono-secret), ui-monospace, "SF Mono", monospace;
   font-variant-numeric: tabular-nums;
   font-variant-ligatures: none;
-}
-
-:focus-visible {
-  outline: 2px solid var(--brass);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-::selection {
-  background: var(--surface-2);
-  color: var(--ink);
-}
-
-input,
-textarea,
-select,
-button {
-  font: inherit;
-  color: inherit;
-}
-
-/* iOS zooms in on inputs under 16px. */
-@media (max-width: 767px) {
-  input,
-  textarea,
-  select {
-    font-size: 1rem;
-  }
-}
-
-input[type="search"]::-webkit-search-cancel-button {
-  -webkit-appearance: none;
-  appearance: none;
 }
 
 /* Long lists render only what's near the viewport; no virtualisation library. */
@@ -412,28 +499,6 @@ html[data-privacy="on"][data-hidden="true"] .secret {
 }
 
 /* ==========================================================================
-   Native dialog
-   ========================================================================== */
-
-dialog {
-  padding: 0;
-  border: 0;
-  color: var(--ink);
-  background: transparent;
-  max-width: 100vw;
-  max-height: 100dvh;
-}
-
-dialog::backdrop {
-  background: var(--overlay-scrim);
-  backdrop-filter: blur(2px);
-}
-
-dialog:not([open]) {
-  display: none;
-}
-
-/* ==========================================================================
    Range input (generator length slider)
    ========================================================================== */
 
@@ -450,14 +515,14 @@ input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
 }
 
 input[type="range"]::-moz-range-track {
   height: 4px;
   border-radius: 999px;
   background: var(--surface-2);
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-strong);
 }
 
 input[type="range"]::-webkit-slider-thumb {

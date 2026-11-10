@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ShieldCheck } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { requireReprompt } from '@/lib/vault/reprompt'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
@@ -112,6 +113,9 @@ export function TwoFactorSection() {
 
   const turnOff = async () => {
     if (!factorId) return
+    // Removing a protection asks for the master password, like revealing a
+    // secret: otherwise one click at an unlocked vault would undo it.
+    if (!(await requireReprompt())) return
     setBusy(true)
     setError(null)
     try {

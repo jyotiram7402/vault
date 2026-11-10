@@ -110,13 +110,23 @@ export function AppShell({ onSignOut, notice, children }: AppShellProps) {
 
   return (
     <div className="flex min-h-dvh flex-col md:flex-row">
-      <Suspense fallback={<div className="hidden w-[72px] shrink-0 md:block lg:w-[232px]" />}>
+      {/* First thing in the tab order: the rail holds a dozen or more stops
+          before the content, and nobody should have to tab through them all. */}
+      <a
+        href="#vault-main"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-50 focus:rounded-btn focus:bg-surface focus:px-4 focus:py-2 focus:text-ink focus:shadow-overlay"
+      >
+        Skip to main content
+      </a>
+
+      <Suspense fallback={<div className="hidden w-22 shrink-0 md:block lg:w-[232px]" />}>
         <NavRail onLock={handleLock} onOpenPalette={() => setPaletteOpen(true)} />
       </Suspense>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* Mobile top bar */}
-        <header className="safe-top sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-surface px-3 py-2 md:hidden">
+        {/* Mobile top bar. The notch inset is added inside the top padding;
+            a separate safe-area class here would replace `py-2`. */}
+        <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-surface px-3 pb-2 pt-[calc(0.5rem+env(safe-area-inset-top))] md:hidden">
           <Link href="/vault" className="rounded-btn" aria-label={`${APP_NAME} home`}>
             <Logo />
           </Link>
@@ -145,14 +155,16 @@ export function AppShell({ onSignOut, notice, children }: AppShellProps) {
               type="button"
               onClick={notice.onDismiss}
               aria-label="Dismiss"
-              className="shrink-0 rounded-field p-1 text-ink-muted hover:text-ink"
+              className="inline-flex size-6 shrink-0 items-center justify-center rounded-field text-ink-muted hover:text-ink pointer-coarse:-my-2 pointer-coarse:-mr-2 pointer-coarse:size-11"
             >
               <X aria-hidden="true" className="size-4" />
             </button>
           </div>
         ) : null}
 
-        <main className={cn('min-w-0 flex-1')}>{children}</main>
+        <main id="vault-main" className={cn('min-w-0 flex-1')}>
+          {children}
+        </main>
 
         <InstallPrompt />
         <BottomNav />

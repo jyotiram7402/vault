@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { authErrorMessage } from '@/lib/supabase/auth-errors'
 import { safeNextPath } from '@/lib/security/safe-next'
 import { GOOGLE_AUTH_ENABLED } from '@/lib/env'
+import { focusFirstInvalid } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Field, describedBy } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -34,6 +35,7 @@ export function LoginForm() {
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
+    const form = event.currentTarget
     setBusy(true)
     setError(null)
     setCanResend(false)
@@ -45,6 +47,7 @@ export function LoginForm() {
       setError(friendly.message)
       setCanResend(Boolean(friendly.canResend))
       setBusy(false)
+      void focusFirstInvalid(form)
       return
     }
 

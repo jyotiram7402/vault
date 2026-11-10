@@ -33,14 +33,34 @@ export function authErrorMessage(
       message: 'That code has expired or was already used. Only the newest email counts. Send a new one.',
     }
   }
-  if (code === 'weak_password' || text.includes('password should') || text.includes('known to be weak')) {
-    return { message: weakPasswordMessage(error.message ?? '', error.reasons) }
-  }
+  // Before the weak-password check: Supabase's wording for this one, "New
+  // password should be different…", also contains "password should".
   if (code === 'same_password' || text.includes('should be different from the old')) {
     return { message: 'That is already your password. Choose a different one.' }
   }
+  if (
+    code === 'weak_password' ||
+    text.includes('password should be at least') ||
+    text.includes('password should contain') ||
+    text.includes('known to be weak')
+  ) {
+    return { message: weakPasswordMessage(error.message ?? '', error.reasons) }
+  }
   if (code === 'reauthentication_needed' || text.includes('requires reauthentication')) {
     return { message: 'For safety, sign in again before changing this password.' }
+  }
+  if (code === 'insufficient_aal' || text.includes('aal2 session is required')) {
+    return { message: 'Two-factor sign-in is on. Enter your authenticator code first, then try again.' }
+  }
+  if (
+    code === 'current_password_required' ||
+    code === 'current_password_mismatch' ||
+    text.includes('current password required')
+  ) {
+    return {
+      message:
+        'Your current sign-in password is needed for this. Change it in Settings, under Account, or use a reset email.',
+    }
   }
   if (code === 'user_already_exists' || text.includes('already registered')) {
     return { message: 'An account already exists for that email. Sign in instead.' }
