@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { TAP_TARGET, cn } from '@/lib/utils'
 
 /**
  * Four plain facts, straight under the hero.
@@ -45,7 +46,13 @@ export function TrustFacts() {
         ))}
       </dl>
       <p className="mt-3 text-sm text-ink-muted">
-        <Link href="/security" className="font-medium text-safe underline underline-offset-2">
+        <Link
+          href="/security"
+          className={cn(
+            'inline-block font-medium text-safe underline underline-offset-2',
+            TAP_TARGET,
+          )}
+        >
           Read how each of these works
         </Link>
       </p>

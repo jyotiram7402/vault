@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { ChevronDown, Fingerprint, KeyRound } from 'lucide-react'
 import { APP_NAME } from '@/lib/config'
-import { focusFirstInvalid, nextTwoFrames, sleep } from '@/lib/utils'
+import { TAP_TARGET, cn, focusFirstInvalid, nextTwoFrames, sleep } from '@/lib/utils'
 import { fromBase64 } from '@/lib/crypto/bytes'
 import { vaultKeyAad } from '@/lib/crypto/constants'
 import { assertKdfParamsAllowed } from '@/lib/crypto/kdf'
@@ -243,11 +243,15 @@ export function UnlockScreen({
         </Button>
       </form>
 
-      <div className="mt-6 flex flex-col items-center gap-3">
+      {/* The wider gap on touch screens keeps the two tap areas from overlapping. */}
+      <div className="mt-6 flex flex-col items-center gap-3 pointer-coarse:gap-6">
         <button
           type="button"
           onClick={() => setMode('recovery')}
-          className="inline-flex items-center gap-1.5 text-sm font-medium text-safe underline underline-offset-2"
+          className={cn(
+            'inline-flex items-center gap-1.5 text-sm font-medium text-safe underline underline-offset-2',
+            TAP_TARGET,
+          )}
         >
           <KeyRound aria-hidden="true" className="size-4" />
           Use recovery key
@@ -255,7 +259,10 @@ export function UnlockScreen({
         <button
           type="button"
           onClick={onSignOut}
-          className="text-sm text-ink-muted underline underline-offset-2 transition-colors hover:text-ink"
+          className={cn(
+            'text-sm text-ink-muted underline underline-offset-2 transition-colors hover:text-ink',
+            TAP_TARGET,
+          )}
         >
           Sign out
         </button>

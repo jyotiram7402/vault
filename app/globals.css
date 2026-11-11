@@ -511,6 +511,14 @@ input[type="range"] {
   cursor: pointer;
 }
 
+/* A 24px strip is hard to land a thumb on. On touch screens the strip that
+   takes the drag is 44px tall; the track and knob keep their size, centred. */
+@media (pointer: coarse) {
+  input[type="range"] {
+    height: 44px;
+  }
+}
+
 input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;

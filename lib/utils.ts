@@ -10,6 +10,21 @@ export function cn(...values: ClassValue[]): string {
   return values.filter(Boolean).join(' ')
 }
 
+/**
+ * A 44px-tall tap area for a line of link text, on touch screens only.
+ *
+ * Text links and text-only buttons are one line tall, about 20px. This puts an
+ * invisible box 12px above and below them rather than adding padding or
+ * negative margins: nothing on screen moves, and it can't fight a margin class
+ * already on the element, which `cn()` would not resolve.
+ *
+ * The box sits on top of whatever lies within those 12px, so keep that much
+ * clear of any other control. An element that is `display: inline` also needs
+ * `inline-block`; otherwise the box is measured from the glyphs, not the line.
+ */
+export const TAP_TARGET =
+  'relative pointer-coarse:after:absolute pointer-coarse:after:inset-x-0 pointer-coarse:after:-inset-y-3'
+
 /** Wait for two animation frames so CSS animations start before heavy work. */
 export function nextTwoFrames(): Promise<void> {
   return new Promise((resolve) => {

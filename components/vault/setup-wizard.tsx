@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react'
 import { Download, Printer, WandSparkles } from 'lucide-react'
 import { APP_NAME } from '@/lib/config'
 import { siteUrl } from '@/lib/env'
-import { cn, focusFirstInvalid, nextTwoFrames, sleep } from '@/lib/utils'
+import { TAP_TARGET, cn, focusFirstInvalid, nextTwoFrames, sleep } from '@/lib/utils'
 import { KDF_DEFAULTS, recoveryVaultKeyAad, vaultKeyAad } from '@/lib/crypto/constants'
 import { toBase64 } from '@/lib/crypto/bytes'
 import {
@@ -305,10 +305,15 @@ export function SetupWizard({ userId, email, onReady }: SetupWizardProps) {
                   {caution ? <p className="text-sm text-warn">{caution}</p> : null}
                 </>
               ) : null}
+              {/* The 4px on touch screens keeps the tap area off the bottom
+                  edge of the password box above. */}
               <button
                 type="button"
                 onClick={handleSuggest}
-                className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-safe underline underline-offset-2"
+                className={cn(
+                  'inline-flex items-center gap-1.5 self-start text-sm font-medium text-safe underline underline-offset-2 pointer-coarse:mt-1',
+                  TAP_TARGET,
+                )}
               >
                 <WandSparkles aria-hidden="true" className="size-4" />
                 Suggest a passphrase

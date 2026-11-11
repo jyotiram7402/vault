@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { authErrorMessage } from '@/lib/supabase/auth-errors'
-import { focusFirstInvalid } from '@/lib/utils'
+import { TAP_TARGET, cn, focusFirstInvalid } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,11 @@ import { Input } from '@/components/ui/input'
 // Supabase's email codes are six digits by default; the project setting
 // allows up to ten.
 const CODE_PATTERN = /^\d{6,10}$/
+
+const BACK_LINK = cn(
+  'text-center text-sm text-ink-muted underline underline-offset-2 transition-colors hover:text-ink',
+  TAP_TARGET,
+)
 
 export function ForgotForm() {
   const router = useRouter()
@@ -107,10 +112,7 @@ export function ForgotForm() {
           </Button>
         </form>
 
-        <Link
-          href="/login"
-          className="text-center text-sm text-ink-muted underline underline-offset-2 transition-colors hover:text-ink"
-        >
+        <Link href="/login" className={BACK_LINK}>
           Back to sign in
         </Link>
       </div>
@@ -138,10 +140,7 @@ export function ForgotForm() {
         Send reset email
       </Button>
 
-      <Link
-        href="/login"
-        className="text-center text-sm text-ink-muted underline underline-offset-2 transition-colors hover:text-ink"
-      >
+      <Link href="/login" className={BACK_LINK}>
         Back to sign in
       </Link>
     </form>
