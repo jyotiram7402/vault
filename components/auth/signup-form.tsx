@@ -8,7 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { authErrorMessage } from '@/lib/supabase/auth-errors'
 import { GOOGLE_AUTH_ENABLED } from '@/lib/env'
 import { estimateStrength } from '@/lib/password/strength'
-import { focusFirstInvalid } from '@/lib/utils'
+import { TAP_TARGET, cn, focusFirstInvalid } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -113,7 +113,10 @@ export function SignupForm() {
 
         <Link
           href="/login"
-          className="text-center text-sm font-medium text-safe underline underline-offset-2"
+          className={cn(
+            'text-center text-sm font-medium text-safe underline underline-offset-2',
+            TAP_TARGET,
+          )}
         >
           Go to sign in
         </Link>

@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { authErrorMessage } from '@/lib/supabase/auth-errors'
 import { safeNextPath } from '@/lib/security/safe-next'
 import { GOOGLE_AUTH_ENABLED } from '@/lib/env'
-import { focusFirstInvalid } from '@/lib/utils'
+import { TAP_TARGET, cn, focusFirstInvalid } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Field, describedBy } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -140,7 +140,7 @@ export function LoginForm() {
               <button
                 type="button"
                 onClick={handleResend}
-                className="font-medium text-safe underline underline-offset-2"
+                className={cn('font-medium text-safe underline underline-offset-2', TAP_TARGET)}
               >
                 Resend confirmation email
               </button>
@@ -167,13 +167,16 @@ export function LoginForm() {
       <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
         <Link
           href="/forgot-password"
-          className="text-ink-muted underline underline-offset-2 transition-colors hover:text-ink"
+          className={cn(
+            'text-ink-muted underline underline-offset-2 transition-colors hover:text-ink',
+            TAP_TARGET,
+          )}
         >
           Forgot password?
         </Link>
         <Link
           href="/signup"
-          className="font-medium text-safe underline underline-offset-2"
+          className={cn('font-medium text-safe underline underline-offset-2', TAP_TARGET)}
         >
           Create account
         </Link>

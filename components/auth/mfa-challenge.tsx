@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { TAP_TARGET, cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Field } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
@@ -105,7 +106,10 @@ export function MfaChallenge({
       <button
         type="button"
         onClick={onSignOut}
-        className="text-sm text-ink-muted underline underline-offset-2 transition-colors hover:text-ink"
+        className={cn(
+          'text-sm text-ink-muted underline underline-offset-2 transition-colors hover:text-ink',
+          TAP_TARGET,
+        )}
       >
         Sign out
       </button>

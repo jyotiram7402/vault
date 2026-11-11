@@ -2,7 +2,14 @@
 
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronDown, CreditCard, Dices, KeyRound, Plus, StickyNote, Trash2 } from 'lucide-react'
-import { cardBrand, cn, focusFirstInvalid, groupCardNumber, luhnValid } from '@/lib/utils'
+import {
+  TAP_TARGET,
+  cardBrand,
+  cn,
+  focusFirstInvalid,
+  groupCardNumber,
+  luhnValid,
+} from '@/lib/utils'
 import { hostOf, normalizeWebsite } from '@/lib/security/url'
 import { estimateStrength } from '@/lib/password/strength'
 import { generateTotp, parseTotpInput } from '@/lib/totp'
@@ -456,11 +463,16 @@ export function ItemForm({
                 />
               </Field>
               {state.password ? <StrengthMeter result={strength} /> : null}
+              {/* The 4px on touch screens keeps the tap area off the bottom
+                  edge of the password box above. */}
               <button
                 type="button"
                 onClick={() => setShowGenerator((value) => !value)}
                 aria-expanded={showGenerator}
-                className="inline-flex items-center gap-1.5 self-start text-sm font-medium text-safe underline underline-offset-2"
+                className={cn(
+                  'inline-flex items-center gap-1.5 self-start text-sm font-medium text-safe underline underline-offset-2 pointer-coarse:mt-1',
+                  TAP_TARGET,
+                )}
               >
                 <Dices aria-hidden="true" className="size-4" />
                 {showGenerator ? 'Hide generator' : 'Generate'}

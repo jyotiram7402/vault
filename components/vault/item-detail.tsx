@@ -14,6 +14,7 @@ import {
 } from 'lucide-react'
 import {
   MASK,
+  TAP_TARGET,
   cardBrand,
   cn,
   formatDate,
@@ -155,7 +156,10 @@ export function ItemDetail({ item, onEdit, onDelete, onToggleFavorite }: ItemDet
               href={link}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-0.5 inline-flex items-center gap-1 text-sm text-safe underline underline-offset-2"
+              className={cn(
+                'mt-0.5 inline-flex items-center gap-1 text-sm text-safe underline underline-offset-2',
+                TAP_TARGET,
+              )}
             >
               {host}
               <ExternalLink aria-hidden="true" className="size-3.5" />

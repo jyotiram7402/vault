@@ -128,7 +128,7 @@ export function IssueList({ report, scanned }: { report: HealthReport; scanned: 
                 <li key={item.id}>
                   <Link
                     href={editHref(item)}
-                    className="inline-flex min-h-9 items-center gap-2 text-sm text-safe underline underline-offset-2"
+                    className="inline-flex min-h-9 items-center gap-2 text-sm text-safe underline underline-offset-2 pointer-coarse:min-h-11"
                   >
                     {item.data.title}
                   </Link>

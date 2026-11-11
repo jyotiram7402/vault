@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { CircleAlert, CircleCheck, ShieldCheck } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { TAP_TARGET, cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { fetchPasskeys } from '@/lib/vault/api'
 import {
@@ -168,7 +168,10 @@ export function SecurityStatus() {
               {!check.ok ? (
                 <a
                   href={check.href}
-                  className="shrink-0 text-sm font-medium text-safe underline underline-offset-2"
+                  className={cn(
+                    'shrink-0 text-sm font-medium text-safe underline underline-offset-2',
+                    TAP_TARGET,
+                  )}
                 >
                   {check.optional ? 'Set up' : 'Turn on'}
                 </a>

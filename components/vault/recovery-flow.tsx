@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { ArrowLeft, KeyRound } from 'lucide-react'
-import { focusFirstInvalid, nextTwoFrames, sleep } from '@/lib/utils'
+import { TAP_TARGET, cn, focusFirstInvalid, nextTwoFrames, sleep } from '@/lib/utils'
 import { toBase64 } from '@/lib/crypto/bytes'
 import { KDF_DEFAULTS, recoveryVaultKeyAad, vaultKeyAad } from '@/lib/crypto/constants'
 import {
@@ -239,7 +239,10 @@ export function RecoveryFlow({
           <button
             type="button"
             onClick={onCancel}
-            className="mt-5 inline-flex w-full items-center justify-center gap-1.5 text-sm text-ink-muted underline underline-offset-2 transition-colors hover:text-ink"
+            className={cn(
+              'mt-5 inline-flex w-full items-center justify-center gap-1.5 text-sm text-ink-muted underline underline-offset-2 transition-colors hover:text-ink',
+              TAP_TARGET,
+            )}
           >
             <ArrowLeft aria-hidden="true" className="size-4" />
             Back to master password
