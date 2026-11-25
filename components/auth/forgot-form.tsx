@@ -19,6 +19,36 @@ const BACK_LINK = cn(
   TAP_TARGET,
 )
 
+/**
+ * Why a reset request failed, in words a person can act on, or null to report
+ * it as sent.
+ *
+ * Only failures that happen the same way for every email address are shown.
+ * Supabase answers an unknown email with a plain success and never reaches
+ * its mailer, so anything the mailer produces only happens for real
+ * accounts: the per-account cooldown (`over_email_send_rate_limit`, a 429),
+ * the hourly email limit and SMTP errors. Showing those would tell anyone
+ * which addresses have accounts, so they read as "sent". The per-IP limit
+ * (`over_request_rate_limit`), the network and a malformed address do not
+ * depend on the account.
+ */
+function sendFailure(error: { message?: string; code?: string } | null): string | null {
+  if (!error) return null
+  const code = (error.code ?? '').toLowerCase()
+  const text = (error.message ?? '').toLowerCase()
+
+  if (code === 'over_request_rate_limit') {
+    return 'Too many requests from this network. Wait a few minutes and try again.'
+  }
+  if (text.includes('failed to fetch') || text.includes('networkerror')) {
+    return 'Can’t reach the server. Check your connection and try again.'
+  }
+  if (code === 'validation_failed' || text.includes('unable to validate email')) {
+    return 'That doesn’t look like a valid email address.'
+  }
+  return null
+}
+
 export function ForgotForm() {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -26,25 +56,37 @@ export function ForgotForm() {
   const [sent, setSent] = useState(false)
   const [code, setCode] = useState('')
   const [codeError, setCodeError] = useState<string | null>(null)
+  const [sendError, setSendError] = useState<string | null>(null)
 
   const handleSend = async (event: React.FormEvent) => {
     event.preventDefault()
     setBusy(true)
 
+    const form = event.currentTarget
+    setSendError(null)
+
     const supabase = createClient()
-    // The result is deliberately ignored: telling someone whether an account
-    // exists is an account-enumeration leak.
-    await supabase.auth
+    const { error } = await supabase.auth
       .resetPasswordForEmail(email, {
         // Supabase's default template sends a `code` that the callback route
         // exchanges. The templates in README.md replace that with a link to
         // /auth/confirm plus a typed code; both work on any device.
         redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
       })
-      .catch(() => undefined)
+      .catch((caught: unknown) => ({
+        error: { message: caught instanceof Error ? caught.message : 'Failed to fetch', code: undefined },
+      }))
 
-    setSent(true)
+    // See sendFailure: errors that only a real account can produce read as
+    // "sent", so the form never reveals whether an account exists.
+    const problem = sendFailure(error)
     setBusy(false)
+    if (problem) {
+      setSendError(problem)
+      void focusFirstInvalid(form)
+      return
+    }
+    setSent(true)
   }
 
   // The emailed link is single-use, and some mailboxes' security scanners
@@ -85,8 +127,9 @@ export function ForgotForm() {
             code. Press the button, or type the code here.
           </p>
           <p className="text-sm text-ink-muted">
-            Only the newest email counts. This changes your sign-in password only; your master
-            password stays the same.
+            Only the newest email counts. If nothing arrives within a few minutes, check your
+            spam folder, or ask whoever runs this app to check its email settings. This changes
+            your sign-in password only; your master password stays the same.
           </p>
         </div>
 
@@ -121,12 +164,14 @@ export function ForgotForm() {
 
   return (
     <form onSubmit={handleSend} className="flex flex-col gap-4">
-      <Field id="forgot-email" label="Email">
+      <Field id="forgot-email" label="Email" error={sendError}>
         <Input
           id="forgot-email"
           type="email"
           value={email}
           onChange={(event) => setEmail(event.target.value)}
+          invalid={Boolean(sendError)}
+          aria-describedby={sendError ? 'forgot-email-error' : undefined}
           autoComplete="email"
           autoCapitalize="off"
           autoCorrect="off"
