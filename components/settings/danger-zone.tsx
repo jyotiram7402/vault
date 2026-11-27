@@ -3,9 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Trash2 } from 'lucide-react'
-import { fromBase64 } from '@/lib/crypto/bytes'
-import { vaultKeyAad } from '@/lib/crypto/constants'
-import { WrongPasswordError, deriveMasterKek, unwrapVaultKey } from '@/lib/crypto/keys'
+import { WrongPasswordError } from '@/lib/crypto/keys'
 import { createClient } from '@/lib/supabase/client'
 import {
   deleteAllItemRows,
@@ -13,6 +11,7 @@ import {
   deleteKeyset,
 } from '@/lib/vault/api'
 import { postSessionMessage } from '@/lib/vault/broadcast'
+import { unwrapWithMasterPassword } from '@/lib/vault/master-password'
 import { lock, replaceItems } from '@/lib/vault/store'
 import { useVault } from '@/lib/vault/use-vault'
 import { Button } from '@/components/ui/button'
@@ -77,18 +76,8 @@ export function DangerZone() {
       const supabase = createClient()
 
       // Prove they are the vault owner, not just someone at an open laptop.
-      const kek = await deriveMasterKek(masterPassword, fromBase64(keyset.kdf_salt), {
-        memoryKiB: keyset.kdf_memory_kib,
-        iterations: keyset.kdf_iterations,
-        parallelism: keyset.kdf_parallelism,
-      })
-      await unwrapVaultKey(
-        keyset.wrapped_key,
-        keyset.wrapped_key_iv,
-        kek,
-        vaultKeyAad(userId),
-        false,
-      )
+      // Shares the lock screen's throttle.
+      await unwrapWithMasterPassword(keyset, userId, masterPassword)
 
       await deleteAllItemRows(supabase, userId)
       await deleteAllPasskeys(supabase, userId)

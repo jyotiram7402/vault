@@ -3,9 +3,8 @@
 import { useEffect, useState, useSyncExternalStore } from 'react'
 import { ShieldCheck } from 'lucide-react'
 import { nextTwoFrames } from '@/lib/utils'
-import { fromBase64 } from '@/lib/crypto/bytes'
-import { vaultKeyAad } from '@/lib/crypto/constants'
-import { WrongPasswordError, deriveMasterKek, unwrapVaultKey } from '@/lib/crypto/keys'
+import { WrongPasswordError } from '@/lib/crypto/keys'
+import { unwrapWithMasterPassword } from '@/lib/vault/master-password'
 import {
   REPROMPT_GRACE_MINUTES,
   getServerRepromptPending,
@@ -63,19 +62,9 @@ export function RepromptHost() {
     await nextTwoFrames()
 
     try {
-      const kek = await deriveMasterKek(password, fromBase64(keyset.kdf_salt), {
-        memoryKiB: keyset.kdf_memory_kib,
-        iterations: keyset.kdf_iterations,
-        parallelism: keyset.kdf_parallelism,
-      })
-      // Succeeds only with the right password. The key is not kept.
-      await unwrapVaultKey(
-        keyset.wrapped_key,
-        keyset.wrapped_key_iv,
-        kek,
-        vaultKeyAad(userId),
-        false,
-      )
+      // Succeeds only with the right password, and shares the lock screen's
+      // throttle. The key is not kept.
+      await unwrapWithMasterPassword(keyset, userId, password)
 
       setPassword('')
       // Starts the grace period and releases whatever was waiting.
