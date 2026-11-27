@@ -164,6 +164,6 @@ upgrade-insecure-requests
 
 Please report security issues privately, not as a public issue.
 
-**Contact:** `security@example.com` *(the person who deployed this app should replace this with a real address, and consider adding a PGP key)*
+**How:** on the repository's GitHub page, open **Security → Report a vulnerability**. That form is private to the repository's owner. (If you run this app, turn it on under **Settings → Code security → Private vulnerability reporting**; without it the form does not exist, and you should put a contact address here instead.)
 
 Please include what you did, what happened, and what you expected. If you have a proof of concept, a minimal one is ideal. We will confirm receipt and keep you updated while a fix is prepared.
