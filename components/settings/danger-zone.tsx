@@ -42,7 +42,11 @@ export function DangerZone() {
   }
 
   const clearItems = async () => {
-    if (!userId) return
+    if (!userId || !keyset) return
+    if (!masterPassword) {
+      setError('Enter your master password.')
+      return
+    }
     if (confirmation !== 'DELETE') {
       setError('Type DELETE exactly to confirm.')
       return
@@ -52,19 +56,35 @@ export function DangerZone() {
     setError(null)
     try {
       const supabase = createClient()
+
+      // The one destructive control that used to need only a typed word.
+      // Prove they are the vault owner, not just someone at an open laptop,
+      // exactly as Delete account does. Shares the lock screen's throttle.
+      await unwrapWithMasterPassword(keyset, userId, masterPassword)
+
       await deleteAllItemRows(supabase, userId)
       replaceItems([])
       setClearOpen(false)
       resetDialogs()
       toast({ message: 'All items deleted', tone: 'success' })
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Couldn’t delete your items.')
+      setError(
+        cause instanceof WrongPasswordError
+          ? 'That master password is wrong.'
+          : cause instanceof Error
+            ? cause.message
+            : 'Couldn’t delete your items.',
+      )
       setBusy(false)
     }
   }
 
   const deleteAccount = async () => {
     if (!userId || !keyset) return
+    if (!masterPassword) {
+      setError('Enter your master password.')
+      return
+    }
     if (confirmation !== 'DELETE') {
       setError('Type DELETE exactly to confirm.')
       return
@@ -186,18 +206,31 @@ export function DangerZone() {
           </>
         }
       >
-        <Field id="clear-confirm" label="Type DELETE to confirm" error={error}>
-          <Input
-            id="clear-confirm"
-            value={confirmation}
-            onChange={(event) => setConfirmation(event.target.value.toUpperCase())}
-            autoComplete="off"
-            secret
-            className="mono"
-            invalid={Boolean(error)}
-            aria-describedby={error ? 'clear-confirm-error' : undefined}
-          />
-        </Field>
+        <div className="flex flex-col gap-4">
+          <p className="text-sm text-ink-muted">
+            Export an encrypted backup first if you want to keep a copy.
+          </p>
+          <Field id="clear-master" label="Master password">
+            <PasswordInput
+              id="clear-master"
+              value={masterPassword}
+              onChange={(event) => setMasterPassword(event.target.value)}
+              autoComplete="off"
+            />
+          </Field>
+          <Field id="clear-confirm" label="Type DELETE to confirm" error={error}>
+            <Input
+              id="clear-confirm"
+              value={confirmation}
+              onChange={(event) => setConfirmation(event.target.value.toUpperCase())}
+              autoComplete="off"
+              secret
+              className="mono"
+              invalid={Boolean(error)}
+              aria-describedby={error ? 'clear-confirm-error' : undefined}
+            />
+          </Field>
+        </div>
       </Dialog>
 
       <Dialog
