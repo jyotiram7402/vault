@@ -1,6 +1,8 @@
 'use client'
 
+import { useEffect } from 'react'
 import { APP_NAME } from '@/lib/config'
+import { lock } from '@/lib/vault/store'
 
 /**
  * Replaces the whole document when the root layout itself fails, so it cannot
@@ -13,6 +15,12 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  useEffect(() => {
+    // Same reason as app/error.tsx: the gate and its auto-lock are gone, the
+    // store is not. Lock so nothing stays decrypted behind this screen.
+    lock('error')
+  }, [error])
+
   return (
     <html lang="en">
       <body
@@ -34,8 +42,8 @@ export default function GlobalError({
             {APP_NAME} couldn’t start
           </h1>
           <p style={{ margin: '0 0 24px', color: '#55625A', lineHeight: 1.55 }}>
-            Something failed before the app finished loading. Your vault is untouched — nothing is
-            decrypted until you unlock it.
+            Something failed before the app finished loading. Your vault has been locked — nothing
+            is decrypted until you unlock it again.
           </p>
           <button
             type="button"

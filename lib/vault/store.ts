@@ -17,7 +17,7 @@ import type { KeysetRow, VaultItem } from '@/lib/vault/types'
 
 export type VaultStatus = 'locked' | 'unlocked'
 
-export type LockReason = 'manual' | 'idle' | 'hidden' | 'remote' | 'signout'
+export type LockReason = 'manual' | 'idle' | 'hidden' | 'remote' | 'signout' | 'error'
 
 export interface VaultSnapshot {
   status: VaultStatus
