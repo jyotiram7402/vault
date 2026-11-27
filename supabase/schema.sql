@@ -68,16 +68,34 @@ begin
 end;
 $$;
 
--- Keeps one account from filling the free database.
+-- Keeps one account from filling the free database: at most 5000 items and
+-- 100 MB of ciphertext per user. The row count alone was not enough — 5000
+-- rows of the 400,000-character maximum is 1.9 GB against a 500 MB database —
+-- and it was only checked on insert, so a small row could be updated into a
+-- huge one. The byte budget is checked on insert and on every change to
+-- ciphertext. The function runs as the caller, under Row Level Security, so
+-- it only ever sees that user's own rows.
 create or replace function private.enforce_vault_item_limit()
 returns trigger
 language plpgsql
 set search_path = ''
 as $$
+declare
+  used bigint;
 begin
-  if (select count(*) from public.vault_items where user_id = new.user_id) >= 5000 then
-    raise exception 'Vault item limit reached (5000 items)';
+  if tg_op = 'INSERT' then
+    if (select count(*) from public.vault_items where user_id = new.user_id) >= 5000 then
+      raise exception 'Vault item limit reached (5000 items)';
+    end if;
   end if;
+
+  select coalesce(sum(char_length(ciphertext)), 0) into used
+    from public.vault_items
+   where user_id = new.user_id and id <> new.id;
+  if used + char_length(new.ciphertext) > 100000000 then
+    raise exception 'Vault storage limit reached (100 MB)';
+  end if;
+
   return new;
 end;
 $$;
@@ -117,7 +135,7 @@ create trigger vault_items_set_updated_at
 
 drop trigger if exists vault_items_enforce_limit on public.vault_items;
 create trigger vault_items_enforce_limit
-  before insert on public.vault_items
+  before insert or update of ciphertext on public.vault_items
   for each row execute function private.enforce_vault_item_limit();
 
 -- ---------- Privileges ----------
