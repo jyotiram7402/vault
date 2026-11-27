@@ -16,11 +16,9 @@ updates:
           - minor
           - patch
     ignore:
-      # A new major version of the framework is a deliberate upgrade, not a
-      # Tuesday. Next.js must stay on 16.x and at 16.4.1 or newer.
-      - dependency-name: next
-        update-types: ["version-update:semver-major"]
-      - dependency-name: react
-        update-types: ["version-update:semver-major"]
-      - dependency-name: react-dom
+      # A new major version of anything is a deliberate upgrade, not a Tuesday:
+      # nobody runs the build locally here, so a major that breaks it would only
+      # be found by Vercel after the merge. Next.js must stay on 16.x and at
+      # 16.4.1 or newer. Minor and patch updates still arrive weekly.
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
