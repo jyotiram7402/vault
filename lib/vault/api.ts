@@ -65,6 +65,11 @@ export function throwVaultError(error: SupabaseErrorLike | null, fallback: strin
   if (message.includes('item limit reached')) {
     throw new VaultRequestError('This vault has reached its limit of 5000 items.')
   }
+  if (message.includes('storage limit reached')) {
+    throw new VaultRequestError(
+      'This vault has reached its storage limit of 100 MB. Delete some items, or shorten long notes.',
+    )
+  }
   if (code === '42501' || message.includes('row-level security')) {
     throw new VaultRequestError(
       'The server refused that change. If two-factor sign-in is on, verify your code and try again.',

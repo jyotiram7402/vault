@@ -181,7 +181,7 @@ Optional: in Vercel **Settings → Functions**, choose the region closest to you
 - **Supabase free projects pause** after roughly a week with no activity. Restoring one is a single button in the dashboard, but it does mean the app will be unreachable until you do.
 - The free **500 MB database** holds hundreds of thousands of items. Each encrypted item is about 1–2 KB.
 - **Vercel Hobby** is for personal, non-commercial use. If you want to run this for an organisation, you need a paid plan.
-- There is a built-in limit of **5000 items per account**, enforced by the database, so one account cannot fill the project.
+- There is a built-in limit of **5000 items and 100 MB per account**, enforced by the database, so one account cannot fill the project. (If you set up the database before this limit existed, run `supabase/schema.sql` again; it is safe to re-run and only the limit changes.)
 
 ---
 
