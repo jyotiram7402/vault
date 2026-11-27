@@ -52,10 +52,26 @@ All of these are in your Supabase project.
 - **Email OTP Expiration**: **900** (fifteen minutes).
 - **Require current password when updating**: on. Changing the sign-in password then needs the current one, except straight after a reset email, so a signed-in browser alone can't take over the account. Supabase still counts a session opened from a reset email as a reset session, so forgotten-password resets keep working.
 - Password Requirements: your choice. The app's strength meter judges guessability, not character types, so if you require letters, digits or symbols here, a password the meter calls excellent can still be refused. When that happens the app repeats Supabase's actual rule under the field.
+- **Secure email change**: on. Changing the account's email then needs a confirmation from the old address as well as the new one. Without it, anyone at a signed-in browser could move the account to their own address with one link, and own every password reset from then on.
+
+**Authentication → Sign In / Providers** (the page itself, above the Email section)
+
+- **Allow anonymous sign-ins**: off. The app never uses them, and an anonymous user still counts as signed in to the database.
+- **Enable manual linking**: off.
 
 **Authentication → Multi-Factor**
 
 - **App authenticator (TOTP)**: enabled
+
+**Authentication → Sessions** (older dashboards: Project Settings → JWT)
+
+- **Access token expiry**: **900** seconds (fifteen minutes; the default is an hour). The browser has to be able to read its session token, so if one is ever stolen it should stop working soon after. The app refreshes sessions in the background, so you won't notice the shorter life.
+- **Detect and revoke potentially compromised refresh tokens**: on (the default).
+
+**Authentication → Attack Protection**
+
+- Leave **CAPTCHA** off. The app's Content Security Policy blocks every third-party script, which is what the CAPTCHA services are, and with sign-ups turned off (below) there is little for a CAPTCHA to protect.
+- **Prevent use of leaked passwords** is only on paid plans; the app's own breach check in Health covers the passwords stored *in* the vault.
 
 **Authentication → URL Configuration**
 
@@ -114,6 +130,10 @@ Copy two values:
 - the **Project URL** (`https://something.supabase.co`)
 - the **publishable key** (starts with `sb_publishable_`). If your project only shows a legacy **anon** key, copy that instead.
 
+Never copy the **secret** key (or the legacy **service_role** key) anywhere: not into Vercel, not into a file, not into a chat. The app has no use for it, and it bypasses every Row Level Security rule. Once the app runs on the publishable key, you can **Disable legacy API keys** on the same page.
+
+**Project Settings → Data API** — leave the defaults alone: **Exposed schemas** `public` (and `graphql_public`), **Max rows** `1000`. Never add `private` or `auth` to the exposed schemas. The app loads your vault in pages of 1000 rows, so a lower Max rows would make it look as if items were missing.
+
 ### E. Deploy on Vercel
 
 1. Push this folder to a GitHub repository.
@@ -135,7 +155,42 @@ Copy two values:
    - put it into `NEXT_PUBLIC_SITE_URL` in Vercel,
    - and **redeploy**. These values are built into the app, so a redeploy is always needed after changing them.
 
+6. Protect the project. All of these are free on Hobby and take a minute:
+   - **Settings → Deployment Protection → Vercel Authentication**: on, at least for preview deployments. An unfinished branch then needs a Vercel sign-in to view, so it can never serve a sign-in page to a stranger on a real `vercel.app` address.
+   - **Settings → Environment Variables**: for each of the four values, tick **Production** only. Previews then build without them and show the "Setup needed" panel, so no preview can ever talk to your real Supabase project. (The trade-off: sign-in can't be tested on a preview, only on `main`.)
+   - **Settings → Git**: Production Branch `main`. Keep **Git Fork Protection** on, so a pull request from a stranger's fork never builds with your variables until you approve it.
+   - **Account → Settings → Security**: turn on two-factor authentication for your Vercel account.
+   - Leave Vercel's **Attack Challenge Mode** off unless the site is actually under attack: it challenges the installed app too.
+
 Optional: in Vercel **Settings → Functions**, choose the region closest to your Supabase region. It makes sign-in noticeably faster.
+
+---
+
+## Keep it secure
+
+The app encrypts everything before it leaves your device, so the realistic ways to lose a vault are not clever attacks on the cryptography. They are these, in order.
+
+**1. Someone taking over one of your accounts.** Whoever controls GitHub can change the code, whoever controls Vercel can ship it, and whoever controls Supabase holds every encrypted key set and the switch that lets strangers sign up. Turn on two-factor authentication (an authenticator app or a passkey, not SMS) on all of these:
+
+- GitHub, Vercel and Supabase;
+- the Gmail account used for SMTP (step C already requires 2-Step Verification);
+- above all, **the mailbox you sign in to those three with**, because every one of their password resets lands there.
+
+Use a personal mailbox with two-factor for these accounts and for your vault sign-in. A company mailbox belongs to the company: its administrators can reset your passwords, and its security scanner opens and sometimes "clicks" your emails.
+
+**2. A weak master password.** The app accepts a short one on purpose, but a copy of the encrypted database can be ground through offline with no rate limit, and every other defence assumes the master password is hard to guess. Use a long passphrase of several random words, and nothing you use anywhere else.
+
+**3. In the app.** Settings → **Two-factor**: on. With it on, someone who steals only your sign-in password can't even read the encrypted rows. Keep the Emergency Kit offline, and take an encrypted backup (Settings → Data) now and then: a free Supabase project that stays paused long enough can be removed.
+
+**4. On GitHub.** Settings → **Code security**: turn on Dependabot alerts and Dependabot security updates. `.github/dependabot.yml` is already in the repository, so updates arrive as pull requests you can read before anything reaches Vercel. If the repository is public, also turn on **Private vulnerability reporting** (Settings → Code security) and add a ruleset on `main` that requires a pull request, so nothing lands on `main` without a merge you can see.
+
+**5. Pin the exact packages Vercel builds (recommended).** This repository is written without a `package-lock.json`, so every Vercel build downloads the newest version of each package that fits the ranges in `package.json`, including the hundred-odd packages those pull in. A bad release of any of them would reach production on your next push, unreviewed. To pin them without installing anything on your computer:
+
+1. On GitHub, open the repository → the green **Code** button → **Codespaces** → **Create codespace on main**. It opens a browser-based editor with a terminal (free quota on personal accounts).
+2. In that terminal run `npm install --package-lock-only`, then commit the new `package-lock.json` from the Source Control panel and push.
+3. Vercel then installs exactly what the lockfile says, every time, and Dependabot proposes updates as pull requests. Never edit the lockfile by hand.
+
+**6. Supabase.** Free projects pause after about a week without activity (restore them from the dashboard). Even with sign-ups off, anyone can ask for a password reset for your address; a burst of those uses up the hourly email budget and delays your own reset email for an hour. Nothing is lost, and sign-in itself is unaffected.
 
 ---
 

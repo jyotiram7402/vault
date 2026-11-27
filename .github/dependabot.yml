@@ -1,0 +1,26 @@
+# Dependabot opens a pull request when a dependency has a new version, so a
+# change to what Vercel builds always arrives as a commit you can read first.
+# Without a lockfile it can only watch the packages named in package.json; add
+# a package-lock.json (README → "Keep it secure") and it covers everything
+# those packages pull in as well.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # A new major version of the framework is a deliberate upgrade, not a
+      # Tuesday. Next.js must stay on 16.x and at 16.4.1 or newer.
+      - dependency-name: next
+        update-types: ["version-update:semver-major"]
+      - dependency-name: react
+        update-types: ["version-update:semver-major"]
+      - dependency-name: react-dom
+        update-types: ["version-update:semver-major"]

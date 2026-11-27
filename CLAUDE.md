@@ -11,7 +11,7 @@ Next.js 16 (App Router, Turbopack, `proxy.ts` — **not** middleware) · React 1
 ## Hard rules
 
 - **Never run terminal commands.** No `npm`, `npx`, `node`, `git`, `tsc`, `next`, `supabase`. The owner pushes to GitHub; Vercel runs the build. If unsure whether something compiles, re-read the code.
-- No lockfiles, `node_modules/`, `.next/`, `next-env.d.ts`, `.env.local`, or binary files. Images are SVG text or generated with `next/og`.
+- No lockfiles, `node_modules/`, `.next/`, `next-env.d.ts`, `.env.local`, or binary files. Images are SVG text or generated with `next/og`. **If the owner adds a `package-lock.json`** (the README's "Keep it secure" section shows how, through GitHub Codespaces), it belongs to the owner and Dependabot alone: Claude never creates, edits or deletes it, and a build error is never fixed by touching it. `.github/dependabot.yml` is the one piece of CI configuration in the repository; it runs on GitHub, holds no secrets and needs no CLI.
 - Only the dependencies in `package.json`. Nothing that needs a CLI step (no shadcn CLI, Prisma, Drizzle, Supabase type generation, Husky).
 - Kebab-case file names everywhere — Vercel's filesystem is case-sensitive.
 - Server Components by default; `'use client'` only where hooks, browser APIs or handlers are needed, and never in a file exporting `metadata`, `viewport` or a route handler.
