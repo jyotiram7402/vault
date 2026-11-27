@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react'
 import { FileDown, TriangleAlert } from 'lucide-react'
 import { nextTwoFrames } from '@/lib/utils'
-import { fromBase64 } from '@/lib/crypto/bytes'
-import { vaultKeyAad } from '@/lib/crypto/constants'
-import { WrongPasswordError, deriveMasterKek, unwrapVaultKey } from '@/lib/crypto/keys'
+import { WrongPasswordError } from '@/lib/crypto/keys'
 import { holdLockOnHide } from '@/lib/vault/auto-lock'
+import { unwrapWithMasterPassword } from '@/lib/vault/master-password'
 import { useVault } from '@/lib/vault/use-vault'
 import { Button } from '@/components/ui/button'
 import { Dialog } from '@/components/ui/dialog'
@@ -65,21 +64,10 @@ export function ExportDialog({ open, onClose }: { open: boolean; onClose: () => 
     onClose()
   }
 
-  /** The same check the unlock screen makes. The key it produces is thrown away. */
+  /** The same check, and the same throttle, as the unlock screen. The key it produces is thrown away. */
   const checkMasterPassword = async () => {
     if (!userId || !keyset) throw new Error('Your vault isn’t open. Unlock it and try again.')
-    const kek = await deriveMasterKek(masterPassword, fromBase64(keyset.kdf_salt), {
-      memoryKiB: keyset.kdf_memory_kib,
-      iterations: keyset.kdf_iterations,
-      parallelism: keyset.kdf_parallelism,
-    })
-    await unwrapVaultKey(
-      keyset.wrapped_key,
-      keyset.wrapped_key_iv,
-      kek,
-      vaultKeyAad(userId),
-      false,
-    )
+    await unwrapWithMasterPassword(keyset, userId, masterPassword)
   }
 
   const describe = (cause: unknown, fallback: string): string =>

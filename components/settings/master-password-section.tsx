@@ -2,13 +2,12 @@
 
 import { useMemo, useState } from 'react'
 import { focusFirstInvalid, nextTwoFrames } from '@/lib/utils'
-import { fromBase64, toBase64 } from '@/lib/crypto/bytes'
+import { toBase64 } from '@/lib/crypto/bytes'
 import { KDF_DEFAULTS, vaultKeyAad } from '@/lib/crypto/constants'
 import {
   WrongPasswordError,
   deriveMasterKek,
   newKdfSalt,
-  unwrapVaultKey,
   verifyWrappedKey,
   wrapVaultKey,
 } from '@/lib/crypto/keys'
@@ -19,6 +18,7 @@ import {
 } from '@/lib/password/strength'
 import { createClient } from '@/lib/supabase/client'
 import { updateKeyset } from '@/lib/vault/api'
+import { unwrapWithMasterPassword } from '@/lib/vault/master-password'
 import { setKeyset } from '@/lib/vault/store'
 import { useVault } from '@/lib/vault/use-vault'
 import { Button } from '@/components/ui/button'
@@ -81,19 +81,9 @@ export function MasterPasswordSection() {
     try {
       const aad = vaultKeyAad(userId)
 
-      // Unwrap as extractable only inside this flow, then drop it.
-      const oldKek = await deriveMasterKek(current, fromBase64(keyset.kdf_salt), {
-        memoryKiB: keyset.kdf_memory_kib,
-        iterations: keyset.kdf_iterations,
-        parallelism: keyset.kdf_parallelism,
-      })
-      const vaultKey = await unwrapVaultKey(
-        keyset.wrapped_key,
-        keyset.wrapped_key_iv,
-        oldKek,
-        aad,
-        true,
-      )
+      // Unwrap as extractable only inside this flow, then drop it. Shares the
+      // lock screen's throttle, so the current password can't be guessed here.
+      const vaultKey = await unwrapWithMasterPassword(keyset, userId, current, true)
 
       const salt = newKdfSalt()
       const newKek = await deriveMasterKek(next, salt, KDF_DEFAULTS)

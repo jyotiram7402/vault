@@ -5,13 +5,10 @@ import { Download, Printer } from 'lucide-react'
 import { APP_NAME } from '@/lib/config'
 import { siteUrl } from '@/lib/env'
 import { nextTwoFrames } from '@/lib/utils'
-import { fromBase64 } from '@/lib/crypto/bytes'
-import { recoveryVaultKeyAad, vaultKeyAad } from '@/lib/crypto/constants'
+import { recoveryVaultKeyAad } from '@/lib/crypto/constants'
 import {
   WrongPasswordError,
-  deriveMasterKek,
   deriveRecoveryKek,
-  unwrapVaultKey,
   verifyWrappedKey,
   wrapVaultKey,
 } from '@/lib/crypto/keys'
@@ -19,6 +16,7 @@ import { generateRecoveryKey } from '@/lib/crypto/recovery-key'
 import { createClient } from '@/lib/supabase/client'
 import { updateKeyset } from '@/lib/vault/api'
 import { holdLockOnHide } from '@/lib/vault/auto-lock'
+import { unwrapWithMasterPassword } from '@/lib/vault/master-password'
 import { setKeyset } from '@/lib/vault/store'
 import { buildEmergencyKit, downloadEmergencyKit } from '@/lib/vault/export'
 import { useVault } from '@/lib/vault/use-vault'
@@ -67,18 +65,8 @@ export function RecoverySection() {
 
     try {
       // Re-ask for the master password: this needs an extractable vault key.
-      const kek = await deriveMasterKek(password, fromBase64(keyset.kdf_salt), {
-        memoryKiB: keyset.kdf_memory_kib,
-        iterations: keyset.kdf_iterations,
-        parallelism: keyset.kdf_parallelism,
-      })
-      const vaultKey = await unwrapVaultKey(
-        keyset.wrapped_key,
-        keyset.wrapped_key_iv,
-        kek,
-        vaultKeyAad(userId),
-        true,
-      )
+      // Shares the lock screen's throttle.
+      const vaultKey = await unwrapWithMasterPassword(keyset, userId, password, true)
 
       const recoveryKey = generateRecoveryKey()
       const recoveryKek = await deriveRecoveryKek(recoveryKey.bytes)

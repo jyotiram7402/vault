@@ -4,11 +4,10 @@ import { useCallback, useEffect, useState } from 'react'
 import { Fingerprint, Trash2 } from 'lucide-react'
 import { APP_NAME } from '@/lib/config'
 import { formatDate, formatRelative, nextTwoFrames } from '@/lib/utils'
-import { fromBase64 } from '@/lib/crypto/bytes'
-import { vaultKeyAad } from '@/lib/crypto/constants'
-import { WrongPasswordError, deriveMasterKek, unwrapVaultKey } from '@/lib/crypto/keys'
+import { WrongPasswordError } from '@/lib/crypto/keys'
 import { createClient } from '@/lib/supabase/client'
 import { deletePasskey, fetchPasskeys, insertPasskey } from '@/lib/vault/api'
+import { unwrapWithMasterPassword } from '@/lib/vault/master-password'
 import { useVault } from '@/lib/vault/use-vault'
 import type { PasskeyRow } from '@/lib/vault/types'
 import { Button } from '@/components/ui/button'
@@ -82,18 +81,8 @@ export function QuickUnlockSection() {
     try {
       // The master password is asked for again: enrolment needs an
       // extractable vault key, which is dropped as soon as this finishes.
-      const kek = await deriveMasterKek(password, fromBase64(keyset.kdf_salt), {
-        memoryKiB: keyset.kdf_memory_kib,
-        iterations: keyset.kdf_iterations,
-        parallelism: keyset.kdf_parallelism,
-      })
-      const vaultKey = await unwrapVaultKey(
-        keyset.wrapped_key,
-        keyset.wrapped_key_iv,
-        kek,
-        vaultKeyAad(userId),
-        true,
-      )
+      // Shares the lock screen's throttle.
+      const vaultKey = await unwrapWithMasterPassword(keyset, userId, password, true)
 
       const { enrollPasskey } = await import('@/lib/crypto/passkey')
       const enrolment = await enrollPasskey({

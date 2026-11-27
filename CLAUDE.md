@@ -52,7 +52,7 @@ lib/crypto/              bytes, random, constants, kdf, keys, items,
                          recovery-key, backup, passkey
 lib/vault/               types, store, use-vault, api, items, search, health,
                          csv, import, export, settings, theme, auto-lock,
-                         broadcast, clipboard
+                         broadcast, clipboard, reprompt, master-password
 lib/password/            generator, strength, common-passwords, wordlist, hibp
 lib/supabase/            client, server, proxy, auth-errors, verify-password
 lib/brand/app-icon.tsx   next/og icon renderer shared by the PWA icon routes
@@ -109,6 +109,8 @@ lib/totp.ts              RFC 6238 codes
 - **Revealing *and copying* a stored secret asks for the master password again** (setting `requireMasterToReveal`, on by default). `lib/vault/reprompt.ts` holds both the grace period and a pending-request store; `RepromptHost` renders the one dialog, in `AppShell`. Callers use `requireReprompt(): Promise<boolean>` — `CopyButton` takes a `guarded` prop, and `useReveal` in `item-detail.tsx` awaits it. It is a module store rather than a React context because the item row and the command palette are outside the detail pane's tree. Guarded: passwords, password history, card numbers, CVV, PIN, hidden custom fields, notes. Not guarded: usernames, a freshly generated password, the Recovery Key during setup, and the live TOTP code (ephemeral, and useless without the password). Note the clipboard caveat documented on `requireReprompt`.
 
   **Every side door goes through the same prompt**, because a security review found each one defeating it in a click: opening the edit form for an existing item (the guard lives in `vault-view.tsx`, not on the Edit button, so Health links, a typed `?edit=1` and the back button are covered too), **both** exports (an encrypted backup sealed with a password the person at the keyboard picks is as good as plaintext to them), "Show notes", turning off two-factor, and loosening anything in Settings → Security (`applySetting` in `security-section.tsx`: switching a protection off, a longer auto-lock, a longer or "never" clipboard wipe; tightening never asks). `ItemDetail` is keyed by item id so a reveal never carries over to the next item. When adding any new way to see, copy, export or weaken, route it through `requireReprompt`.
+
+  **Every in-session master-password check goes through `unwrapWithMasterPassword`** in `lib/vault/master-password.ts` — the reprompt dialog, both exports, change master password, new Recovery Key, quick-unlock enrolment and delete account. It shares the unlock screen's throttle from `lib/vault/auto-lock.ts`; before it, each of the six derived and unwrapped on its own and could be guessed at full Argon2id speed while the lock screen made the same person wait a minute between tries. Never call `deriveMasterKek` + `unwrapVaultKey` against the stored keyset from a component; call this.
 
 - **The master password policy is deliberately permissive** — six characters or more, and not the user's own email, enforced in `masterPasswordProblem` (`lib/password/strength.ts`). No minimum strength, no character-class rule: digits only or letters only are both accepted. The owner asked for this explicitly after being told the cost. `masterPasswordCaution()` surfaces the risk beside the strength meter instead of blocking. **Do not reinstate the strength gate as a "fix".** The 12-character minimum on the *account* (sign-in) password is unrelated, still in force, and also enforced by Supabase.
 
