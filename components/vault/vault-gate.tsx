@@ -61,6 +61,8 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
 
   const userIdRef = useRef<string | null>(null)
   userIdRef.current = userId
+  const stateRef = useRef<GateState>(state)
+  stateRef.current = state
 
   const check = useCallback(async () => {
     if (!isSupabaseConfigured) {
@@ -135,15 +137,42 @@ export function VaultGate({ children }: { children: React.ReactNode }) {
     void check()
   }, [check])
 
+  // Another device may have changed the master password or the Recovery Key
+  // while this tab was open. Asked after every lock, so the unlock screen
+  // checks against the row the server holds, not the one this tab loaded.
+  const refreshKeyset = useCallback(async () => {
+    const id = userIdRef.current
+    if (!id) return
+    try {
+      const row = await fetchKeyset(createClient(), id)
+      if (row && userIdRef.current === id) setKeyset(row)
+    } catch {
+      // Offline, or signed out meanwhile: the copy from the last unlock is
+      // the best there is, and a wrong one only fails the unlock.
+    }
+  }, [])
+
   // Any lock from anywhere (idle, another tab, the lock button) lands here.
+  //
+  // While the vault is open, the store's keyset is mirrored into this
+  // component: Settings writes a rotated master password or Recovery Key to
+  // the store, and this copy is what the unlock screen is handed after the
+  // next lock. Without the mirror the OLD password kept opening the vault in
+  // this tab, and the new one was refused, until the page was reloaded. The
+  // mirror never drives the gate to `unlocked`; that stays an explicit
+  // callback from the unlock screen, the recovery flow and the setup wizard.
   useEffect(
     () =>
       subscribe(() => {
-        if (getSnapshot().status === 'locked') {
-          setState((current) => (current === 'unlocked' ? 'locked' : current))
+        const snapshot = getSnapshot()
+        if (snapshot.status === 'unlocked') {
+          if (snapshot.keyset) setKeyset(snapshot.keyset)
+          return
         }
+        setState((current) => (current === 'unlocked' ? 'locked' : current))
+        if (stateRef.current === 'unlocked') void refreshKeyset()
       }),
-    [],
+    [refreshKeyset],
   )
 
   useEffect(
