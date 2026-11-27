@@ -25,5 +25,20 @@ export function safeNextPath(value: string | null | undefined, fallback = '/vaul
     return fallback
   }
   if (resolved.origin !== PLACEHOLDER_ORIGIN) return fallback
-  return `${resolved.pathname}${resolved.search}${resolved.hash}`
+
+  // Callers get a relative string back and resolve it again, and both
+  // router.replace() and redirect() read a leading "//" as another site.
+  // `/..//evil.com` passes the check above (it resolves to
+  // https://next.invalid//evil.com, still on the placeholder origin) but its
+  // pathname is `//evil.com`, which would then open evil.com after sign-in.
+  // So the result is resolved once more, exactly as a caller would, and must
+  // still be a plain path on this origin.
+  const path = `${resolved.pathname}${resolved.search}${resolved.hash}`
+  if (!path.startsWith('/') || path.startsWith('//')) return fallback
+  try {
+    if (new URL(path, PLACEHOLDER_ORIGIN).origin !== PLACEHOLDER_ORIGIN) return fallback
+  } catch {
+    return fallback
+  }
+  return path
 }
