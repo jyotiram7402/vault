@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { TriangleAlert } from 'lucide-react'
 import { APP_NAME } from '@/lib/config'
+import { lock } from '@/lib/vault/store'
 import { Button } from '@/components/ui/button'
 
 export default function ErrorBoundary({
@@ -14,6 +15,13 @@ export default function ErrorBoundary({
   reset: () => void
 }) {
   useEffect(() => {
+    // A render error anywhere under /vault unmounts the gate, and with it the
+    // idle timer, lock-on-hide and the privacy screen — but not the key and
+    // the decrypted items, which live in the store. Lock, so that "Try again"
+    // goes back through the unlock screen instead of straight into an open
+    // vault left unguarded for however long this page sat here. Harmless
+    // when the vault was already locked.
+    lock('error')
     // Only the digest, never the message: an error message could contain
     // fragments of whatever the failing code was holding.
     if (error.digest) console.error(`${APP_NAME} error digest:`, error.digest)
@@ -24,8 +32,8 @@ export default function ErrorBoundary({
       <TriangleAlert aria-hidden="true" className="size-9 text-warn" />
       <h1 className="plate mt-6 text-3xl text-ink">Something went wrong</h1>
       <p className="prose-measure mt-2 text-ink-muted">
-        Your vault is unaffected: nothing is decrypted on this screen. Try again, or reload the page
-        to lock and start fresh.
+        Your vault has been locked, so nothing is decrypted on this screen. Try again and unlock it,
+        or go home.
       </p>
       <div className="mt-7 flex flex-wrap justify-center gap-3">
         <Button variant="primary" onClick={reset}>
